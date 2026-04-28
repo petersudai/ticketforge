@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Prisma 7: connection URLs moved to prisma.config.ts (not schema.prisma).
+  // See prisma.config.ts at the project root for DATABASE_URL and DIRECT_URL config.
+  provider = "postgresql"
+}
+
+// ── Organisations (multi-tenant) ──────────────────────────────────────
+// Users are managed by Supabase Auth — we store only business data here.
+// supabaseUserId links to auth.users.id in Supabase.
+
+model Organisation {
+  id       String  @id @default(cuid())
+  name     String
+  slug     String  @unique
+  logo     String?
+  currency String  @default("KES")
+  plan     String  @default("starter")
+  isDemo   Boolean @default(false)
+
+  // M-Pesa / payout credentials (collected post-signup in Settings)
+  mpesaSc      String? // Paybill or Till number
+  mpesaKey     String? // Daraja Consumer Key
+  mpesaSecret  String? // Daraja Consumer Secret
+  mpesaPasskey String? // Daraja Passkey
+  mpesaNumber  String? // Personal M-Pesa number for payouts
+
+  // Payout verification — KYC-ready structure.
+  // Events can be created immediately, but payouts are LOCKED until
+  // payoutVerified = true. This gates the revenue withdrawal flow.
+  payoutVerified   Boolean   @default(false)
+  payoutVerifiedAt DateTime?
+  kycStatus        String    @default("none") // "none"|"pending"|"approved"|"rejected"
+  kycSubmittedAt   DateTime?
+
+  // Scanner override PIN — stored server-side only; never sent to clients.
+  overridePin String @default("1234")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members          OrgMember[]
+  events           Event[]
+  staffInvites     StaffInvite[]
+  staffAssignments StaffEventAssignment[]
+}
+
+model OrgMember {
+  id             String @id @default(cuid())
+  role           String @default("owner") // "owner" | "admin" | "staff"
+  supabaseUserId String // references auth.users.id in Supabase
+  orgId          String
+
+  org Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([supabaseUserId, orgId])
+}
+
+// ── Staff invitation system ───────────────────────────────────────────
+// Organiser invites staff by email. Staff receive a secure link to
+// accept the invite, set a password, and get scanner-only access
+// scoped to their assigned events only.
+
+model StaffInvite {
+  id         String    @id @default(cuid())
+  token      String    @unique // secure random hex token, 48h expiry
+  email      String
+  name       String
+  orgId      String
+  invitedBy  String    // supabaseUserId of the inviting organiser
+  status     String    @default("pending") // "pending" | "accepted" | "expired"
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  org            Organisation     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  eventAssignments StaffInviteEvent[]
+}
+
+// Which events are included in this invite (many-to-many)
+model StaffInviteEvent {
+  id            String @id @default(cuid())
+  staffInviteId String
+  eventId       String
+
+  invite StaffInvite @relation(fields: [staffInviteId], references: [id], onDelete: Cascade)
+
+  @@unique([staffInviteId, eventId])
+}
+
+// Live event assignments for accepted staff members
+model StaffEventAssignment {
+  id             String   @id @default(cuid())
+  supabaseUserId String   // the staff member's Supabase user ID
+  eventId        String
+  orgId          String
+  createdAt      DateTime @default(now())
+
+  org Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([supabaseUserId, eventId])
+}
+
+// ── Events ────────────────────────────────────────────────────────────
+
+model Event {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  date        String
+  time        String?
+  venue       String?
+  organizer   String?
+  category    String?
+  description String?
+  capacity    Int?
+  currency    String   @default("KES")
+  accent      String   @default("#6C5CE7")
+  bgImage     String?
+  mpesaSc     String?
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orgId String
+  org   Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  tiers     Tier[]
+  attendees Attendee[]
+
+  @@unique([orgId, slug])
+}
+
+model Tier {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  price       Float     @default(0)
+  quantity    Int       @default(100)
+  capacity    Int       @default(1)      // people admitted per ticket (1 = solo, 2 = couple, etc.)
+  hidden      Boolean   @default(false)  // hidden tiers don't appear in public marketplace
+  sortOrder   Int       @default(0)      // display order
+  saleStartsAt DateTime?                 // null = immediately on event publish
+  saleEndsAt   DateTime?                 // null = until sold out / event ends
+  inviteToken  String?   @unique         // set for hidden tiers; grants access via ?tier=TOKEN
+  eventId     String
+
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  attendees Attendee[]
+}
+
+model Attendee {
+  id                 String    @id @default(cuid())
+  name               String
+  email              String?
+  phone              String?
+  seat               String?
+  ticketId           String    @unique
+  payStatus          String    @default("pending")
+  pricePaid          Float     @default(0)
+  checkedIn          Boolean   @default(false)
+  checkedInAt        DateTime?
+  emailSent          Boolean   @default(false)
+  source             String    @default("manual")
+  mpesaReceiptNumber String?
+  downloadCount      Int       @default(0)
+  lastDownloadAt     DateTime?
+  eventId            String
+  tierId             String?
+
+  event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tier  Tier?  @relation(fields: [tierId], references: [id])
+  scans Scan[]
+
+  createdAt DateTime @default(now())
+}
+
+model Scan {
+  id         String   @id @default(cuid())
+  ticketId   String
+  attendeeId String?
+  eventId    String
+  result     String
+  overridden Boolean  @default(false)
+  scannedAt  DateTime @default(now())
+
+  attendee Attendee? @relation(fields: [attendeeId], references: [id])
+}
+
+// ── Pending M-Pesa payments ───────────────────────────────────────────
+// Created when an STK Push is initiated. The M-Pesa callback finds this
+// record by checkoutRequestId, verifies the amount, and creates the Attendee.
+// Prevents: (1) buyers registering without paying, (2) amount tampering,
+// (3) replay attacks on the callback endpoint.
+
+model PendingPayment {
+  id                 String   @id @default(cuid())
+  checkoutRequestId  String   @unique
+  merchantRequestId  String?
+  ticketId           String   @unique  // pre-generated, used for attendee
+  eventId            String
+  tierId             String
+  attendeeName       String
+  attendeeEmail      String?
+  phone              String
+  expectedAmount     Float    // the amount we told Safaricom — verified on callback
+  status             String   @default("pending") // "pending" | "completed" | "failed"
+  mpesaReceiptNumber String?
+  resultDesc         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ── User profiles (RBAC) ──────────────────────────────────────────────
+// Linked to Supabase auth.users via supabaseUserId.
+// Role is ALSO stored in Supabase user_metadata for fast JWT reads.
+// This table is the source of truth — metadata is a cache.
+//
+// Valid roles: "super_admin" | "organiser" | "staff"
+// Attendees are NOT in this table — they have no account.
+
+model Profile {
+  id             String   @id @default(cuid())
+  supabaseUserId String   @unique // auth.users.id
+  role           String   @default("organiser") // super_admin|organiser|staff
+  fullName       String?
+  avatarUrl      String?
+  phone          String?
+  orgId          String?  // primary org (organiser / staff)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

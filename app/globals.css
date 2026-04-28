@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonts */
+  --font-heading: "Syne", sans-serif;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-mono: "DM Mono", monospace;
+
+  /* Brand purple */
+  --color-brand-50: oklch(96% 0.04 280);
+  --color-brand-100: oklch(92% 0.08 280);
+  --color-brand-200: oklch(84% 0.13 280);
+  --color-brand-300: oklch(74% 0.17 280);
+  --color-brand-400: oklch(65% 0.19 280);
+  --color-brand-500: oklch(55% 0.22 280);
+  --color-brand-600: oklch(47% 0.22 280);
+  --color-brand-700: oklch(39% 0.21 280);
+  --color-brand-800: oklch(32% 0.19 280);
+  --color-brand-900: oklch(27% 0.17 280);
+
+  /* Semantic */
+  --color-ok: oklch(65% 0.17 160);
+  --color-er: oklch(55% 0.22 25);
+  --color-wa: oklch(60% 0.18 45);
+  --color-mpesa: oklch(55% 0.18 155);
+
+  /* Radius */
+  --radius-sm: 7px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+}
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  
+  html { color-scheme: dark; }
+  
+  body {
+    background: #0a0a0f;
+    color: #f0f0f8;
+    font-family: "DM Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Syne", sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-heading { font-family: "Syne", sans-serif; }
+  .font-mono { font-family: "DM Mono", monospace; }
+
+  /* Scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+  }
+
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.25s ease both;
+  }
+  .animate-live-pulse {
+    animation: livePulse 2s ease-in-out infinite;
+  }
+  .animate-scan {
+    animation: scanLine 2.2s ease-in-out infinite alternate;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.35; }
+  }
+  @keyframes scanLine {
+    from { top: 8%;  }
+    to   { top: 88%; }
+  }
+}
