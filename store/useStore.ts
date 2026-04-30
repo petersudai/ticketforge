@@ -47,12 +47,14 @@ export interface Attendee {
   ticketId:     string;
   payStatus:    "paid" | "free" | "pending";
   pricePaid:    number;
-  checkedIn:    boolean;
-  checkedInAt?: string;
-  emailSent:    boolean;
-  tier?:        string;
-  tierId?:      string;
-  source:       string;
+  checkedIn:     boolean;
+  checkedInAt?:  string;
+  checkInCount?: number;   // how many times scanned in (multi-use group tickets)
+  emailSent:     boolean;
+  tier?:         string;   // tier name (flattened from API for display)
+  tierCapacity?: number;   // people per ticket (from tier.capacity)
+  tierId?:       string;
+  source:        string;
   eventId:      string;
   createdAt:    string;
 }
@@ -87,7 +89,9 @@ export interface Scan {
   attendeeTier?: string;
   eventId:       string;
   eventName:     string;
-  result:        "valid" | "invalid" | "duplicate" | "override";
+  result:        "valid" | "invalid" | "duplicate" | "override" | "over_capacity" | "cooldown" | "undone";
+  entryNumber?:  number;
+  scannerId?:    string;
   scannedAt:     string;
 }
 

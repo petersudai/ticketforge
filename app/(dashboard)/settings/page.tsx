@@ -7,22 +7,15 @@ import { Card, CardHeader, CardTitle, Button, Input, Field } from "@/components/
 import { Save, Database, Loader2 } from "lucide-react";
 
 export default function SettingsPage() {
-  const { platformFee, setPlatformFee } = useStore();
+  const { platformFee } = useStore();
   const { events, loading: eventsLoading } = useEvents();
 
-  const [pin,     setPin]     = useState("");
-  const [fee,     setFee]     = useState(String(platformFee));
-  const [saved,   setSaved]   = useState(false);
+  const [pin,       setPin]       = useState("");
+  const [saved,     setSaved]     = useState(false);
   const [pinSaving, setPinSaving] = useState(false);
   const [pinError,  setPinError]  = useState("");
 
   const totalAttendees = events.reduce((s, e) => s + (e.attendees?.length ?? 0), 0);
-
-  const handleSaveFee = () => {
-    setPlatformFee(parseFloat(fee) || 2.5);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
 
   const handleSavePin = async () => {
     if (pin.length < 4) { setPinError("PIN must be at least 4 digits"); return; }
@@ -80,15 +73,17 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      {/* Platform fee */}
+      {/* Platform fee — read-only for organisers */}
       <Card>
         <CardHeader><CardTitle>Platform fee</CardTitle></CardHeader>
-        <div className="space-y-3">
-          <Field label="Fee (%)">
-            <Input type="number" value={fee} onChange={e => setFee(e.target.value)} min="0" max="100" step="0.1" />
-          </Field>
-          <p className="text-[11px] text-white/35">Percentage deducted from gross revenue for platform usage.</p>
+        <div className="flex items-center justify-between py-1">
+          <p className="text-[13px] text-white/60">Applied to gross revenue from ticket sales</p>
+          <span className="text-[18px] font-bold text-white">{platformFee}%</span>
         </div>
+        <p className="text-[11px] text-white/25 mt-2">
+          Platform fee is set by TicketForge and cannot be changed by organisers.
+          Contact support if you have questions about your fee rate.
+        </p>
       </Card>
 
       {/* DB summary */}
@@ -115,12 +110,7 @@ export default function SettingsPage() {
         </p>
       </Card>
 
-      <div className="flex items-center gap-3">
-        <Button variant="primary" onClick={handleSaveFee}>
-          <Save className="w-3.5 h-3.5" /> Save fee
-        </Button>
-        {saved && <span className="text-[12px] text-emerald-400">Saved ✓</span>}
-      </div>
+      {saved && <span className="text-[12px] text-emerald-400">Saved ✓</span>}
     </div>
   );
 }

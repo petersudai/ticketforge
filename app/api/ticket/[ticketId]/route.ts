@@ -87,12 +87,13 @@ export async function GET(req: NextRequest, { params }: Params) {
         ticketId:   attendee.ticketId,
         payStatus:  attendee.payStatus,
         pricePaid:  attendee.pricePaid,
-        checkedIn:  attendee.checkedIn,
-        emailSent:  attendee.emailSent,
-        tierId:     attendee.tierId,
-        eventId:    attendee.eventId,
-        createdAt:  attendee.createdAt,
-        tier:       attendee.tier ? { name: attendee.tier.name, color: attendee.tier.color, capacity: attendee.tier.capacity ?? 1 } : null,
+        checkedIn:    attendee.checkedIn,
+        checkInCount: attendee.checkInCount ?? 0,
+        emailSent:    attendee.emailSent,
+        tierId:       attendee.tierId,
+        eventId:      attendee.eventId,
+        createdAt:    attendee.createdAt,
+        tier:         attendee.tier ? { name: attendee.tier.name, capacity: attendee.tier.capacity ?? 1 } : null,
       },
       event: {
         id:          event.id,
@@ -179,7 +180,7 @@ ${bgImage ? `.hero-bg { position: absolute; inset: 0; object-fit: cover; width: 
       <div>
         <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Ticket ID</div>
         <div class="ticket-id">${escapeHtml(ticketId)}</div>
-        <div class="footer-note">Present this QR at the entrance<br/>One entry per ticket</div>
+        <div class="footer-note">Present this QR at the entrance<br/>${(attendee.tier?.capacity ?? 1) > 1 ? `Admits ${escapeHtml(attendee.tier.capacity)} people` : "One entry per ticket"}</div>
       </div>
     </div>
   </div>

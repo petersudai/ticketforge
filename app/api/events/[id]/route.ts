@@ -18,6 +18,8 @@ const PatchEventSchema = z.object({
   name:        z.string().min(1).max(200).trim().optional(),
   date:        z.string().optional(),
   time:        z.string().nullable().optional(),
+  endTime:     z.string().max(20).nullable().optional(),
+  endDate:     z.string().nullable().optional(),
   venue:       z.string().nullable().optional(),
   organizer:   z.string().nullable().optional(),
   category:    z.string().nullable().optional(),

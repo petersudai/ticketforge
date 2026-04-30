@@ -16,12 +16,14 @@ import { z } from "zod";
 import { randomBytes } from "crypto";
 
 const CreateEventSchema = z.object({
-  name:        z.string().min(1).max(200).trim(),
+  name:        z.string().min(3, "Event name must be at least 3 characters").max(200).trim(),
   slug:        z.string().optional(),
-  date:        z.string().min(1),
-  time:        z.string().optional().nullable(),
-  venue:       z.string().optional().nullable(),
-  organizer:   z.string().optional().nullable(),
+  date:        z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
+  time:        z.string().min(1, "Event time is required").max(20),
+  endTime:     z.string().max(20).optional().nullable(),
+  endDate:     z.string().optional().nullable(),
+  venue:       z.string().min(1, "Venue is required").max(200).trim(),
+  organizer:   z.string().min(1, "Organizer / brand name is required").max(100).trim(),
   category:    z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   capacity:    z.number().int().positive().optional().nullable(),
@@ -31,16 +33,16 @@ const CreateEventSchema = z.object({
   mpesaSc:     z.string().optional().nullable(),
   published:   z.boolean().default(true),
   tiers:       z.array(z.object({
-    name:         z.string().min(1),
+    name:         z.string().min(1, "Tier name is required"),
     description:  z.string().optional().nullable(),
     price:        z.number().min(0),
-    quantity:     z.number().int().min(0),
+    quantity:     z.number().int().min(1, "Tier quantity must be at least 1"),
     capacity:     z.number().int().min(1).default(1),
     hidden:       z.boolean().default(false),
     sortOrder:    z.number().int().default(0),
     saleStartsAt: z.string().datetime().nullable().optional(),
     saleEndsAt:   z.string().datetime().nullable().optional(),
-  })).optional().default([]),
+  })).min(1, "At least one ticket tier is required"),
 });
 
 
@@ -65,7 +67,9 @@ export async function GET(req: NextRequest) {
 
     const where = guard.role === "super_admin" ? {} : { orgId: orgId! };
 
-    const events = await db.event.findMany({
+    // Use (db as any) so we can select the new slotIndex / orderId fields that
+    // aren't in the generated Prisma client types until `npm run db:generate` runs.
+    const events = await (db as any).event.findMany({
       where,
       include: {
         tiers:     { orderBy: { sortOrder: "asc" } },
@@ -73,8 +77,9 @@ export async function GET(req: NextRequest) {
           select: {
             id: true, name: true, email: true, phone: true, seat: true,
             ticketId: true, payStatus: true, pricePaid: true,
-            checkedIn: true, checkedInAt: true, emailSent: true,
+            checkedIn: true, checkedInAt: true, checkInCount: true, emailSent: true,
             source: true, tierId: true, eventId: true, createdAt: true,
+            slotIndex: true, orderId: true,
             tier: { select: { name: true, capacity: true } },
           },
         },

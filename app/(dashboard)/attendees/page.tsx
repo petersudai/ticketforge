@@ -69,8 +69,8 @@ export default function AttendeesPage() {
   const exportCSV = () => {
     if (!attendees.length) return;
     const rows = [
-      ["Name","Email","Phone","Tier","Seat","Ticket ID","Payment","Price","Checked In"],
-      ...attendees.map(a => [a.name, a.email||"", a.phone||"", a.tier||"", a.seat||"", a.ticketId, a.payStatus, a.pricePaid, a.checkedIn ? "Yes" : "No"]),
+      ["Name","Email","Phone","Tier","Seat","Ticket ID","Payment","Price","Entries Used","Capacity"],
+      ...attendees.map(a => [a.name, a.email||"", a.phone||"", a.tier||"", a.seat||"", a.ticketId, a.payStatus, a.pricePaid, (a as any).checkInCount ?? 0, (a as any).tierCapacity ?? 1]),
     ];
     const csv  = rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n");
     const link = document.createElement("a");
@@ -119,12 +119,18 @@ export default function AttendeesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total" value={attendees.length} />
-        <StatCard label="Paid" value={attendees.filter(a => a.payStatus === "paid").length} valueClass="text-emerald-400" />
-        <StatCard label="Checked in" value={attendees.filter(a => a.checkedIn).length} />
-        <StatCard label="Free" value={attendees.filter(a => a.payStatus === "free").length} />
-      </div>
+      {(() => {
+        const peopleAdmitted = attendees.reduce((s, a) => s + ((a as any).checkInCount ?? 0), 0);
+        const ticketsIn = attendees.filter(a => ((a as any).checkInCount ?? 0) > 0).length;
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard label="Total" value={attendees.length} />
+            <StatCard label="Paid" value={attendees.filter(a => a.payStatus === "paid").length} valueClass="text-emerald-400" />
+            <StatCard label="Tickets in" value={ticketsIn} />
+            <StatCard label="People admitted" value={peopleAdmitted} valueClass="text-emerald-400" />
+          </div>
+        );
+      })()}
 
       {/* Add attendee form */}
       {event && (
@@ -194,9 +200,13 @@ export default function AttendeesPage() {
                     <td className="py-2.5 pr-4 text-white/50">{a.tier || "—"}</td>
                     <td className="py-2.5 pr-4">{payBadge(a.payStatus)}</td>
                     <td className="py-2.5 pr-4">
-                      {a.checkedIn
-                        ? <Badge variant="green">✓ In</Badge>
-                        : <Badge variant="gray">—</Badge>}
+                      {(() => {
+                        const count = (a as any).checkInCount ?? 0;
+                        const cap   = (a as any).tierCapacity ?? 1;
+                        if (a.checkedIn) return <Badge variant="green">✓ {cap > 1 ? `${count}/${cap}` : "In"}</Badge>;
+                        if (count > 0)   return <Badge variant="purple">{count}/{cap}</Badge>;
+                        return <Badge variant="gray">—</Badge>;
+                      })()}
                     </td>
                     <td className="py-2.5">
                       <button onClick={() => handleDelete(a.id)}

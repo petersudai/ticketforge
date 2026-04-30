@@ -20,15 +20,21 @@ export default function AnalyticsPage() {
 
   const allAttendees = filteredEvents.flatMap(e => (e.attendees ?? []).map(a => ({ ...a, eventName: e.name })));
 
-  // Hourly check-in chart
+  // People admitted = sum of checkInCount (multi-use group ticket aware)
+  const peopleAdmitted = allAttendees.reduce((s, a) => s + ((a as any).checkInCount ?? 0), 0);
+
+  // Hourly check-in chart (based on first check-in timestamp)
   const checkInData = Array.from({ length: 24 }, (_, h) => ({
     hour:  `${h.toString().padStart(2,"0")}:00`,
-    count: allAttendees.filter(a => a.checkedIn && a.checkedInAt && new Date(a.checkedInAt).getHours() === h).length,
+    count: allAttendees.filter(a => a.checkedInAt && new Date(a.checkedInAt).getHours() === h).length,
   }));
 
-  // Tier breakdown
+  // Tier breakdown — tier is now a plain string (normalized in useEvents hook)
   const tierMap: Record<string, number> = {};
-  allAttendees.forEach(a => { const t = a.tier || "General"; tierMap[t] = (tierMap[t] || 0) + 1; });
+  allAttendees.forEach(a => {
+    const t = (a.tier as string) || "General";
+    tierMap[t] = (tierMap[t] || 0) + 1;
+  });
   const tierData = Object.entries(tierMap).map(([name, value]) => ({ name, value }));
 
   if (loading) {
@@ -54,7 +60,7 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Total attendees" value={allAttendees.length} />
-        <StatCard label="Checked in" value={allAttendees.filter(a => a.checkedIn).length} valueClass="text-emerald-400" />
+        <StatCard label="People admitted" value={peopleAdmitted} valueClass="text-emerald-400" />
         <StatCard label="Scan events" value={scans.length} />
         <StatCard label="Events" value={filteredEvents.length} />
       </div>

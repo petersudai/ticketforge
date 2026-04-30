@@ -6,9 +6,17 @@ import { useEvents } from "@/lib/hooks/useEvents";
 import { useStore } from "@/store/useStore";
 import { Card, CardHeader, CardTitle, Button, Select, Badge, StatCard } from "@/components/ui";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { Download, TrendingUp, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Download, Lock, ArrowRight, Loader2 } from "lucide-react";
 
 const COLORS = ["#6C5CE7","#00b894","#e17055","#0984e3","#fdcb6e","#d63031"];
+
+/** Normalize attendee.tier — may be a plain string OR { name, capacity } object */
+function tierName(tier: unknown): string {
+  if (!tier) return "General";
+  if (typeof tier === "string") return tier || "General";
+  if (typeof tier === "object") return (tier as any).name || "General";
+  return "General";
+}
 
 function PayoutLockBanner() {
   return (
@@ -41,10 +49,22 @@ export default function RevenuePage() {
   const allAttendees   = filteredEvents.flatMap(e =>
     (e.attendees ?? []).map(a => ({ ...a, eventName: e.name, curr: e.currency || "KES" }))
   );
-  const paid    = allAttendees.filter(a => a.payStatus === "paid");
-  const free    = allAttendees.filter(a => a.payStatus === "free");
-  const pending = allAttendees.filter(a => a.payStatus === "pending");
-  const gross   = paid.reduce((s, a) => s + a.pricePaid, 0);
+
+  // Primary attendees only (slotIndex === 0): one record per ticket purchased.
+  // Expanded extras (slotIndex > 0) from capacity-2+ tiers are excluded from
+  // financial counts so that 1 Couple ticket shows as 1 sale, not 2.
+  // Legacy records without slotIndex (null/undefined) are treated as primary.
+  const primary = allAttendees.filter(a => ((a as any).slotIndex ?? 0) === 0);
+
+  const paid    = primary.filter(a => a.payStatus === "paid");
+  const free    = primary.filter(a => a.payStatus === "free");
+  const pending = primary.filter(a => a.payStatus === "pending");
+
+  // Gross: sum of (pricePaid × tierCapacity) on primary slots = correct total revenue.
+  // pricePaid on primary slots is stored as totalPaid/ticketCount (fractional), so
+  // multiplying back by capacity restores the per-slot price.
+  const slotPrice = (a: (typeof paid)[0]) => a.pricePaid * ((a as any).tierCapacity ?? 1);
+  const gross   = paid.reduce((s, a) => s + slotPrice(a), 0);
   const net     = gross * (1 - platformFee / 100);
 
   const monthData = Array.from({ length: 6 }, (_, i) => {
@@ -53,18 +73,19 @@ export default function RevenuePage() {
     const label = d.toLocaleString("default", { month: "short" });
     const rev   = paid
       .filter(a => new Date(a.createdAt).getMonth() === d.getMonth() && new Date(a.createdAt).getFullYear() === d.getFullYear())
-      .reduce((s, a) => s + a.pricePaid, 0);
+      .reduce((s, a) => s + slotPrice(a), 0);
     return { month: label, revenue: rev };
   });
 
   const tierRevenue: Record<string, number> = {};
-  paid.forEach(a => { const t = a.tier || "General"; tierRevenue[t] = (tierRevenue[t] || 0) + a.pricePaid; });
+  paid.forEach(a => { const t = tierName(a.tier); tierRevenue[t] = (tierRevenue[t] || 0) + slotPrice(a); });
   const pieData = Object.entries(tierRevenue).map(([name, value]) => ({ name, value }));
 
   const exportCSV = () => {
+    // Export primary slots only — one row per ticket purchased — with the full slot price.
     const rows = [
       ["Name","Email","Phone","Event","Tier","Ticket ID","Status","Amount","Date"],
-      ...allAttendees.map(a => [a.name, a.email||"", a.phone||"", a.eventName, a.tier||"", a.ticketId, a.payStatus, a.pricePaid, a.createdAt]),
+      ...primary.map(a => [a.name, a.email||"", a.phone||"", a.eventName||"", tierName(a.tier), a.ticketId, a.payStatus, slotPrice(a), a.createdAt]),
     ];
     const csv = rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n");
     const link = document.createElement("a");
@@ -104,7 +125,7 @@ export default function RevenuePage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Gross revenue" value={`KES ${Math.round(gross).toLocaleString()}`} valueClass="text-emerald-400" />
         <StatCard label={`Net (after ${platformFee}% fee)`} value={`KES ${Math.round(net).toLocaleString()}`} valueClass="text-emerald-400" />
-        <StatCard label="Paid tickets" value={paid.length} />
+        <StatCard label="Paid sales" value={paid.length} />
         <StatCard label="Pending" value={pending.length} valueClass="text-amber-400" />
       </div>
 
@@ -142,7 +163,7 @@ export default function RevenuePage() {
       {/* Transaction list */}
       <Card>
         <CardHeader>
-          <CardTitle>Transactions ({allAttendees.length})</CardTitle>
+          <CardTitle>Transactions ({primary.length})</CardTitle>
         </CardHeader>
         <div className="overflow-x-auto">
           <table className="w-full text-[12px]">
@@ -156,26 +177,29 @@ export default function RevenuePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
-              {allAttendees.slice(0, 50).map(a => (
-                <tr key={a.id} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="py-2.5 pr-4 text-white/80">{a.name}</td>
-                  <td className="py-2.5 pr-4 text-white/50 truncate max-w-[140px]">{a.eventName}</td>
-                  <td className="py-2.5 pr-4 text-white/50">{a.tier || "—"}</td>
-                  <td className="py-2.5 pr-4">
-                    <Badge variant={a.payStatus === "paid" ? "green" : a.payStatus === "free" ? "blue" : "amber"}>
-                      {a.payStatus}
-                    </Badge>
-                  </td>
-                  <td className="py-2.5 text-right font-semibold text-emerald-400">
-                    {a.pricePaid > 0 ? `${a.curr} ${a.pricePaid.toLocaleString()}` : "Free"}
-                  </td>
-                </tr>
-              ))}
+              {primary.slice(0, 50).map(a => {
+                const amt = slotPrice(a);
+                return (
+                  <tr key={a.id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="py-2.5 pr-4 text-white/80">{a.name}</td>
+                    <td className="py-2.5 pr-4 text-white/50 truncate max-w-[140px]">{(a as any).eventName}</td>
+                    <td className="py-2.5 pr-4 text-white/50">{tierName(a.tier) || "—"}</td>
+                    <td className="py-2.5 pr-4">
+                      <Badge variant={a.payStatus === "paid" ? "green" : a.payStatus === "free" ? "blue" : "amber"}>
+                        {a.payStatus}
+                      </Badge>
+                    </td>
+                    <td className="py-2.5 text-right font-semibold text-emerald-400">
+                      {amt > 0 ? `${(a as any).curr} ${amt.toLocaleString()}` : "Free"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-          {allAttendees.length > 50 && (
+          {primary.length > 50 && (
             <p className="text-[11px] text-white/25 text-center py-3">
-              Showing 50 of {allAttendees.length}. Export CSV for full list.
+              Showing 50 of {primary.length}. Export CSV for full list.
             </p>
           )}
         </div>

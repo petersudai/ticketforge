@@ -21,6 +21,9 @@ const AllowedUpdates = z.object({
   seat:        z.string().optional(),
   payStatus:   z.enum(["paid", "free", "pending"]).optional(),
   pricePaid:   z.number().min(0).optional(),
+  // NOTE: setting checkedIn directly bypasses the multi-use checkInCount counter.
+  // Use POST /api/scan for normal check-ins and POST /api/attendees/[id]/undo-checkin to undo.
+  // This direct override is allowed only for organiser manual corrections.
   checkedIn:   z.boolean().optional(),
   checkedInAt: z.string().optional(),
   emailSent:   z.boolean().optional(),

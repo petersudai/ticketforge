@@ -39,7 +39,16 @@ export function useAttendees(eventId: string | null): UseAttendeesResult {
       }
 
       const data = await res.json();
-      setAttendees(Array.isArray(data) ? data : []);
+      // Flatten attendee.tier objects so tier is always a plain string
+      const normalized = Array.isArray(data)
+        ? data.map((a: any) => {
+            if (a.tier && typeof a.tier === "object") {
+              return { ...a, tier: a.tier.name ?? "", tierCapacity: a.tier.capacity ?? 1 };
+            }
+            return a;
+          })
+        : [];
+      setAttendees(normalized);
     } catch (err: any) {
       setError(err.message ?? "Network error");
       setAttendees([]);
