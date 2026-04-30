@@ -16,6 +16,8 @@ import { prisma } from "@/lib/db";
 type Params = { params: Promise<{ slug: string }> };
 
 function buildTierStatus(t: any, now: Date) {
+  // _count.attendees is filtered to slotIndex=0 (primary slots) to correctly track tier.quantity consumption.
+  // Legacy attendees all have slotIndex=0 by default, so backward compat is preserved.
   const sold      = t._count?.attendees ?? 0;
   const remaining = Math.max(0, t.quantity - sold);
   const soldOut   = t.quantity === 0 || remaining === 0;
@@ -71,6 +73,8 @@ export async function GET(req: NextRequest, { params }: Params) {
         slug:        true,
         date:        true,
         time:        true,
+        endTime:     true,
+        endDate:     true,
         venue:       true,
         organizer:   true,
         category:    true,
@@ -93,7 +97,7 @@ export async function GET(req: NextRequest, { params }: Params) {
             sortOrder:    true,
             saleStartsAt: true,
             saleEndsAt:   true,
-            _count:       { select: { attendees: true } },
+            _count:       { select: { attendees: { where: { slotIndex: 0 } } } },
           },
         },
         _count: { select: { attendees: true } },
@@ -124,6 +128,8 @@ export async function GET(req: NextRequest, { params }: Params) {
       slug:          event.slug,
       date:          event.date,
       time:          event.time,
+      endTime:       event.endTime,
+      endDate:       event.endDate,
       venue:         event.venue,
       organizer:     event.organizer,
       category:      event.category,

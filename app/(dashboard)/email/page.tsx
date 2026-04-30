@@ -22,7 +22,10 @@ export default function EmailPage() {
 
   const getTargets = () => {
     if (!event) return [];
-    let targets = event.attendees.filter(a => a.ticketId && a.email);
+    // Filter to primary slots only (slotIndex === 0) so capacity-expanded attendees
+    // (e.g. the 2nd entry from a Couple ticket) don't generate duplicate emails
+    // to the same buyer. Legacy records without slotIndex are treated as primary.
+    let targets = event.attendees.filter(a => a.ticketId && a.email && ((a as any).slotIndex ?? 0) === 0);
     if (audience === "unsent") targets = targets.filter(a => !a.emailSent);
     if (audience === "vip") targets = targets.filter(a => (a.tier || "").toLowerCase().includes("vip"));
     if (audience === "unpaid") targets = targets.filter(a => a.payStatus === "pending");
@@ -57,8 +60,10 @@ export default function EmailPage() {
     );
   };
 
-  const sent = event?.attendees.filter(a => a.emailSent).length || 0;
-  const pending = event?.attendees.filter(a => !a.emailSent && a.email).length || 0;
+  // Count primary slots only to avoid double-counting expanded attendees
+  const primaryAttendees = event?.attendees.filter(a => ((a as any).slotIndex ?? 0) === 0) ?? [];
+  const sent    = primaryAttendees.filter(a => a.emailSent).length;
+  const pending = primaryAttendees.filter(a => !a.emailSent && a.email).length;
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto animate-fade-in space-y-5">

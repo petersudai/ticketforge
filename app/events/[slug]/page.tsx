@@ -39,6 +39,8 @@ interface PublicEvent {
   slug:        string;
   date:        string;
   time?:       string;
+  endTime?:    string;
+  endDate?:    string;
   venue?:      string;
   organizer?:  string;
   category?:   string;
@@ -88,6 +90,36 @@ function formatDate(d: string) {
   } catch { return d; }
 }
 
+// "Fri 10 May" — no timezone drift (uses local constructor)
+function fmtDay(dateStr: string): string {
+  const p = dateStr.split("-");
+  if (p.length < 3) return dateStr;
+  const d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+  return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+}
+
+// Produces: "Fri 10 May 7:00 PM – Sat 12 May 4:00 AM"
+//       or: "Fri 10 May 7:00 PM – 10:00 PM"  (same-day end time only)
+//       or: "Fri 10 May 7:00 PM"              (no end)
+function buildDateTimeRange(
+  date: string,
+  time?: string | null,
+  endDate?: string | null,
+  endTime?: string | null,
+): string {
+  const startDay  = fmtDay(date);
+  const startFull = time ? `${startDay} ${time}` : startDay;
+
+  const hasDiffEndDate = endDate && endDate !== date;
+  if (hasDiffEndDate) {
+    const endDay  = fmtDay(endDate!);
+    const endFull = endTime ? `${endDay} ${endTime}` : endDay;
+    return `${startFull} – ${endFull}`;
+  }
+  if (endTime) return `${startFull} – ${endTime}`;
+  return startFull;
+}
+
 function MetaRow({ icon, text }: { icon: React.ReactNode; text: string }) {
   return <span style={{ display: "flex", alignItems: "center", gap: 6 }}>{icon}{text}</span>;
 }
@@ -125,39 +157,6 @@ function Skeleton() {
   );
 }
 
-// ── Success screen ────────────────────────────────────────────────────
-
-function SuccessScreen({ ticketId, name, event }: { ticketId: string; name: string; event: PublicEvent }) {
-  return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", background: "#06060e" }}>
-      <div style={{ maxWidth: 480, width: "100%" }}>
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(0,184,148,0.12)", border: "1.5px solid rgba(0,184,148,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }}>✓</div>
-          <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 6 }}>You&apos;re registered!</h2>
-          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.45)" }}>Hi <strong style={{ color: "#fff" }}>{name}</strong>, your ticket for <strong style={{ color: "#fff" }}>{event.name}</strong> is confirmed.</p>
-        </div>
-
-        <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 16, padding: "1.5rem", marginBottom: 16 }}>
-          <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Your Ticket ID</p>
-          <p style={{ fontFamily: "'DM Mono',monospace", fontSize: 22, fontWeight: 700, color: "#a29cf4", letterSpacing: "0.06em", marginBottom: 16 }}>{ticketId}</p>
-          <div style={{ display: "flex", gap: 10 }}>
-            <a href={`/ticket/${ticketId}`} style={{ flex: 1, display: "block", textAlign: "center", background: event.accent || "#6C5CE7", color: "#fff", padding: "12px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none" }}>
-              View &amp; Download Ticket →
-            </a>
-          </div>
-        </div>
-
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", textAlign: "center" }}>
-          Check your email for the confirmation. No account required — bookmark your ticket link.
-        </p>
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <a href="/marketplace" style={{ fontSize: 13, color: "rgba(108,92,231,0.8)", textDecoration: "none" }}>← Back to events</a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Input style ───────────────────────────────────────────────────────
 
 const inputStyle: React.CSSProperties = {
@@ -177,10 +176,10 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
   const [tierToken, setTierToken] = useState<string | null>(null);
 
   const [selectedTierIdx, setSelectedTierIdx] = useState(0);
-  const [form,  setForm]  = useState({ name: "", email: "", phone: "", seat: "" });
-  const [payState, setPayState] = useState<"idle"|"initiating"|"waiting"|"confirmed"|"failed">("idle");
-  const [payMsg,   setPayMsg]   = useState("");
-  const [successTicketId, setSuccessTicketId] = useState<string | null>(null);
+  const [quantity,  setQuantity]  = useState(1);
+  const [form,      setForm]      = useState({ name: "", email: "", phone: "", seat: "" });
+  const [payState,  setPayState]  = useState<"idle"|"initiating"|"waiting"|"confirmed"|"failed">("idle");
+  const [payMsg,    setPayMsg]    = useState("");
 
   // ── Fetch event from public API (pass invite token if present) ─────
   useEffect(() => {
@@ -202,7 +201,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
       .finally(() => setLoading(false));
   }, [slug]);
 
-  if (loading)  return <Skeleton />;
+  if (loading) return <Skeleton />;
 
   if (notFound || !event) {
     return (
@@ -216,15 +215,24 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
     );
   }
 
-  if (successTicketId) {
-    return <SuccessScreen ticketId={successTicketId} name={form.name} event={event} />;
-  }
-
-  const visibleTiers = event.tiers;
-  const tier = visibleTiers[selectedTierIdx];
-  const isFree = !tier || tier.price === 0;
+  const visibleTiers  = event.tiers;
+  const tier          = visibleTiers[selectedTierIdx];
+  const isFree        = !tier || tier.price === 0;
+  const totalPrice    = tier ? tier.price * quantity : 0;
   // Event is fully unavailable only if every tier is sold out or outside its sale window
-  const eventSoldOut = event.soldOut || visibleTiers.every(t => t.soldOut || t.saleWindowStatus !== "active");
+  const eventSoldOut  = event.soldOut || visibleTiers.every(t => t.soldOut || t.saleWindowStatus !== "active");
+  // Client-side max: capped at 20 (server also validates remaining inventory)
+  const MAX_QTY = 20;
+
+  const qtBtnStyle: React.CSSProperties = {
+    width: 34, height: 34, borderRadius: "50%",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    color: "#fff", fontSize: 20, lineHeight: 1,
+    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+    transition: "background 0.15s",
+    fontFamily: "monospace",
+  };
 
   // Poll M-Pesa payment status
   // Poll our DB (via /api/mpesa/status) until the M-Pesa callback
@@ -238,8 +246,13 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
         const d = await r.json();
 
         if (d.status === "completed") {
-          // Attendee was created server-side in the callback — just show the ticket
-          setSuccessTicketId(d.ticketId);
+          // Redirect to the order confirmation page which shows all tickets
+          if (d.orderId) {
+            window.location.href = `/order/${d.orderId}`;
+          } else {
+            // Fallback for legacy/simulated payments without orderId
+            window.location.href = `/ticket/${d.ticketId}`;
+          }
           return;
         }
         if (d.status === "failed") {
@@ -265,33 +278,39 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
     if (tier?.saleWindowStatus === "ended")       { setPayMsg("Sales for this tier have ended."); return; }
     setPayMsg("");
 
-    // Free registration
+    // Free registration (one call, creates quantity attendees atomically)
     if (isFree) {
       try {
         const r = await fetch("/api/public/register", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({
-            eventId: event.id,
-            tierId:  tier?.id ?? "",
-            name:    form.name.trim(),
-            email:   form.email.trim(),
-            phone:   form.phone.trim(),
-            seat:    form.seat.trim() || "",
+            eventId:  event.id,
+            tierId:   tier?.id ?? "",
+            name:     form.name.trim(),
+            email:    form.email.trim(),
+            phone:    form.phone.trim(),
+            seat:     form.seat.trim() || "",
+            quantity,
           }),
         });
         const d = await r.json();
         if (!r.ok) { setPayMsg(d.error || "Registration failed."); return; }
-        setSuccessTicketId(d.ticketId);
+        // Redirect to order confirmation page
+        if (d.orderId) {
+          window.location.href = `/order/${d.orderId}`;
+        } else {
+          window.location.href = `/ticket/${d.ticketId}`;
+        }
       } catch {
         setPayMsg("Registration failed. Please try again.");
       }
       return;
     }
 
-    // Paid — M-Pesa STK Push
-    // The server creates both PendingPayment and (on callback) Attendee.
-    // The client only polls for status — it never creates the attendee directly.
+    // Paid — M-Pesa STK Push.
+    // Server computes the total amount (tier.price × quantity) to prevent tampering.
+    // Client only polls for status — never creates the attendee directly.
     setPayState("initiating");
     setPayMsg("Initiating M-Pesa payment…");
 
@@ -301,7 +320,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
           phone:         form.phone.trim(),
-          amount:        tier.price,
+          quantity,
           tierId:        tier.id,
           eventId:       event.id,
           eventName:     event.name,
@@ -342,7 +361,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
             {event.name}
           </h1>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16, fontSize: 13, color: "rgba(255,255,255,0.45)", marginBottom: 20 }}>
-            <MetaRow icon={<CalIcon />} text={`${formatDate(event.date)}${event.time ? ` · ${event.time}` : ""}`} />
+            <MetaRow icon={<CalIcon />} text={buildDateTimeRange(event.date, event.time, event.endDate, event.endTime)} />
             {event.venue     && <MetaRow icon={<PinIcon />}  text={event.venue} />}
             {event.organizer && <MetaRow icon={<UserIcon />} text={`by ${event.organizer}`} />}
           </div>
@@ -377,7 +396,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
           return (
             <div
               key={t.id}
-              onClick={() => !unavailable && setSelectedTierIdx(i)}
+              onClick={() => { if (!unavailable) { setSelectedTierIdx(i); setQuantity(1); } }}
               style={{
                 background: isSelected ? "rgba(108,92,231,0.12)" : "rgba(255,255,255,0.04)",
                 border: isSelected ? `1.5px solid rgba(108,92,231,0.5)` : "1px solid rgba(255,255,255,0.09)",
@@ -402,7 +421,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
                   )}
                   {(t.capacity ?? 1) > 1 && (
                     <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>
-                      Admits {t.capacity} people per ticket
+                      Each ticket generates {t.capacity} individual entry passes
                     </div>
                   )}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
@@ -424,6 +443,70 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
         {eventSoldOut && (
           <div style={{ background: "rgba(214,48,49,0.1)", border: "1px solid rgba(214,48,49,0.25)", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#ff7675", textAlign: "center" }}>
             This event has reached capacity. No more tickets available.
+          </div>
+        )}
+
+        {/* ── Quantity selector ──────────────────────────────────── */}
+        {!eventSoldOut && tier && !tier.soldOut && tier.saleWindowStatus === "active" && (
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+              How many tickets?
+            </p>
+            <div style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.09)",
+              borderRadius: 14, padding: "14px 16px",
+              display: "flex", alignItems: "center", gap: 20,
+              flexWrap: "wrap",
+            }}>
+              {/* Stepper */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <button
+                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                  style={qtBtnStyle}
+                  aria-label="Decrease quantity"
+                >−</button>
+                <span style={{
+                  fontFamily: "'Syne',sans-serif", fontSize: 24, fontWeight: 800,
+                  color: "#fff", minWidth: 32, textAlign: "center",
+                }}>
+                  {quantity}
+                </span>
+                <button
+                  onClick={() => setQuantity(q => Math.min(MAX_QTY, q + 1))}
+                  style={qtBtnStyle}
+                  aria-label="Increase quantity"
+                >+</button>
+              </div>
+
+              {/* Ticket count note */}
+              <div style={{ flex: 1, minWidth: 120 }}>
+                {tier.capacity > 1
+                  ? <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.5 }}>
+                      {quantity} × {tier.name} = <strong style={{ color: "#fff" }}>{quantity * tier.capacity} individual tickets</strong>
+                      <br /><span style={{ fontSize: 11 }}>Each person gets their own QR code</span>
+                    </p>
+                  : quantity > 1
+                    ? <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
+                        {quantity} tickets — one QR code each
+                      </p>
+                    : null}
+              </div>
+
+              {/* Running total */}
+              {tier.price > 0 && (
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  {quantity > 1 && (
+                    <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>
+                      {quantity} × {event.currency} {tier.price.toLocaleString()}
+                    </p>
+                  )}
+                  <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: "#55efc4", lineHeight: 1 }}>
+                    {event.currency} {totalPrice.toLocaleString()}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -461,12 +544,19 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
             {/* M-Pesa info */}
             {!isFree && (
               <div style={{ background: "rgba(0,165,80,0.07)", border: "1px solid rgba(0,165,80,0.2)", borderRadius: 12, padding: "1rem", marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 13, fontWeight: 600 }}>Pay via</span>
                   <span style={{ background: "#00A550", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>M-PESA</span>
-                  <span style={{ marginLeft: "auto", fontFamily: "'Syne',sans-serif", fontWeight: 700, color: "#55efc4", fontSize: 14 }}>
-                    {event.currency} {tier?.price.toLocaleString()}
-                  </span>
+                  <div style={{ marginLeft: "auto", textAlign: "right" }}>
+                    <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, color: "#55efc4", fontSize: 16 }}>
+                      {event.currency} {totalPrice.toLocaleString()}
+                    </span>
+                    {quantity > 1 && (
+                      <span style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)" }}>
+                        {quantity} × {event.currency} {tier?.price.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {payState === "idle" && (
@@ -521,8 +611,9 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
             >
               {payState === "initiating" ? "Connecting…"
                 : payState === "waiting"    ? "Waiting for payment…"
+                : isFree && quantity > 1    ? `Register ${quantity} tickets (free) →`
                 : isFree                    ? "Register for free →"
-                : `Pay ${event.currency} ${tier?.price.toLocaleString()} with M-Pesa →`}
+                : `Pay ${event.currency} ${totalPrice.toLocaleString()} with M-Pesa →`}
             </button>
 
             <p style={{ fontSize: 11, color: "rgba(255,255,255,0.22)", textAlign: "center", marginTop: 10 }}>

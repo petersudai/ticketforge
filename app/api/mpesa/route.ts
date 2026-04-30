@@ -28,14 +28,14 @@ export async function POST(req: NextRequest) {
   const validation = validateBody(MpesaInitSchema, rawBody);
   if (!validation.success) return validation.response;
 
-  const { phone, amount, tierId, eventId, eventName, attendeeName, attendeeEmail } = validation.data;
+  const { phone, quantity, tierId, eventId, eventName, attendeeName, attendeeEmail } = validation.data;
 
   // ── Validate tier is available ────────────────────────────────────
   const tier = await (prisma as any).tier.findFirst({
     where:   { id: tierId, eventId, hidden: false },
     include: {
       event:  { select: { published: true } },
-      _count: { select: { attendees: true } },
+      _count: { select: { attendees: { where: { slotIndex: 0 } } } },
     },
   }).catch(() => null);
 
@@ -57,8 +57,20 @@ export async function POST(req: NextRequest) {
 
   const sold      = tier._count?.attendees ?? 0;
   const remaining = tier.quantity - sold;
-  if (tier.quantity > 0 && remaining <= 0) {
-    return NextResponse.json({ error: "Sorry — this ticket tier is sold out" }, { status: 409 });
+  if (tier.quantity > 0 && remaining < quantity) {
+    const msg = remaining <= 0
+      ? "Sorry — this ticket tier is sold out"
+      : `Only ${remaining} ticket${remaining === 1 ? "" : "s"} remaining in this tier`;
+    return NextResponse.json({ error: msg }, { status: 409 });
+  }
+
+  // ── Compute expected amount server-side (never trust client total) ─
+  const expectedAmount = Math.round(tier.price * quantity);
+  if (expectedAmount < 1) {
+    return NextResponse.json(
+      { error: "Use the free registration flow for zero-price tickets." },
+      { status: 400 }
+    );
   }
 
   const ticketId = genTicketId();
@@ -77,7 +89,8 @@ export async function POST(req: NextRequest) {
         attendeeName,
         attendeeEmail:  attendeeEmail ?? null,
         phone,
-        expectedAmount: amount,
+        quantity,
+        expectedAmount,
         status:         "pending",
       },
     }).catch((err: any) => {
@@ -87,8 +100,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       simulated:         true,
       ticketId,
+      quantity,
+      ticketCount:       quantity * (tier.capacity ?? 1),
       checkoutRequestId: simulatedReqId,
-      message:           `Simulation mode — no real charge. STK Push would go to ${phone}.`,
+      message:           `Simulation mode — no real charge. STK Push would go to ${phone} for ${expectedAmount} KES.`,
     });
   }
 
@@ -97,9 +112,11 @@ export async function POST(req: NextRequest) {
     const { initiateSTKPush } = await import("@/lib/mpesa");
     const stkRes = await initiateSTKPush({
       phone,
-      amount,
+      amount:      expectedAmount,
       accountRef:  ticketId,
-      description: `${eventName} - ${tier.name} Ticket`,
+      description: quantity > 1
+        ? `${eventName} - ${quantity}× ${tier.name}`
+        : `${eventName} - ${tier.name} Ticket`,
     });
 
     if (stkRes.ResponseCode !== "0") {
@@ -116,7 +133,8 @@ export async function POST(req: NextRequest) {
         attendeeName,
         attendeeEmail:  attendeeEmail ?? null,
         phone,
-        expectedAmount: amount,
+        quantity,
+        expectedAmount,
         status:         "pending",
       },
     });
@@ -125,6 +143,8 @@ export async function POST(req: NextRequest) {
       checkoutRequestId: stkRes.CheckoutRequestID,
       merchantRequestId: stkRes.MerchantRequestID,
       ticketId,
+      quantity,
+      ticketCount:       quantity * (tier.capacity ?? 1),
       message:           stkRes.CustomerMessage,
     });
   } catch (err: any) {

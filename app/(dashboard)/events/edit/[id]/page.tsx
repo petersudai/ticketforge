@@ -10,10 +10,13 @@ import {
   Textarea, Field, Badge, StatCard, EmptyState,
 } from "@/components/ui";
 import { formatDate, slugify } from "@/lib/utils";
+import { CATEGORIES, normalizeCategory } from "@/lib/constants/categories";
+import { getSupabaseClient } from "@/lib/supabase";
 import {
   ArrowLeft, Save, Trash2, Users, Ticket, Globe,
   Plus, Eye, EyeOff, Edit2, Check, X, AlertTriangle,
-  ChevronUp, ChevronDown, Copy, Link2,
+  ChevronUp, ChevronDown, Copy, Link2, ImagePlus, XCircle,
+  Loader2, FileText,
 } from "lucide-react";
 
 // ── Tier row ──────────────────────────────────────────────────────────
@@ -332,18 +335,24 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const { id }    = use(params);
   const router    = useRouter();
   const { events, loading: eventsLoading, refetch } = useEvents();
-  const { loading: authLoading } = useAuth();
+  const { loading: authLoading, role: userRole } = useAuth();
   const event     = events.find(e => e.id === id);
 
-  const [editing,     setEditing]     = useState(false);
-  const [showAddTier, setShowAddTier] = useState(false);
-  const [tiers,   setTiers]   = useState<any[]>([]);
-  const [form,    setForm]    = useState<any>(null);
-  const [saveMsg, setSaveMsg] = useState("");
+  const [showAddTier,   setShowAddTier]   = useState(false);
+  const [tiers,         setTiers]         = useState<any[]>([]);
+  const [form,          setForm]          = useState<any>(null);
+  const [saving,        setSaving]        = useState<"" | "save" | "draft" | "publish">("");
+  const [saveMsg,       setSaveMsg]       = useState("");
+  const [bgUploading,   setBgUploading]   = useState(false);
 
   useEffect(() => {
     if (event && !form) {
-      setForm({ ...event });
+      setForm({
+        ...event,
+        // Normalise free-text categories created before the dropdown was enforced
+        category: normalizeCategory(event.category),
+        bgImage:  event.bgImage ?? null,
+      });
       setTiers(event.tiers ?? []);
     } else if (event) {
       setTiers(event.tiers ?? []);
@@ -380,27 +389,42 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const attended = event.attendees.filter((a: any) => a.checkedIn).length;
-  const rate     = event.attendees.length ? Math.round((attended / event.attendees.length) * 100) : 0;
-  const revenue  = event.attendees.filter((a: any) => a.payStatus === "paid").reduce((s: number, a: any) => s + a.pricePaid, 0);
+  // Multi-use check-in stats
+  // ticketsIn  = attendees that have been scanned at least once
+  // peopleIn   = sum of all checkInCount values (actual humans admitted)
+  // maxPeople  = sum of all tier capacities for paid tickets (expected max admissions)
+  const paidAttendees  = event.attendees.filter((a: any) => a.payStatus === "paid");
+  const ticketsIn      = event.attendees.filter((a: any) => (a.checkInCount ?? 0) > 0).length;
+  const peopleIn       = event.attendees.reduce((s: number, a: any) => s + (a.checkInCount ?? 0), 0);
+  const maxPeople      = paidAttendees.reduce((s: number, a: any) => s + (a.tierCapacity ?? 1), 0);
+  const attended       = event.attendees.filter((a: any) => a.checkedIn).length; // fully redeemed tickets
+  const rate           = maxPeople > 0 ? Math.round((peopleIn / maxPeople) * 100) : 0;
+  const revenue        = paidAttendees.reduce((s: number, a: any) => s + a.pricePaid, 0);
 
-  const handleSave = async () => {
+  const buildPayload = (overrides?: object) => ({
+    name:        form.name,
+    date:        form.date,
+    time:        form.time || null,
+    endTime:     form.endTime || null,
+    endDate:     form.endDate || null,
+    venue:       form.venue || null,
+    category:    form.category || null,
+    description: form.description || null,
+    organizer:   form.organizer || null,
+    currency:    form.currency,
+    accent:      form.accent,
+    published:   form.published,
+    bgImage:     form.bgImage ?? null,
+    ...overrides,
+  });
+
+  const doSave = async (payload: object, mode: "save" | "draft" | "publish") => {
+    setSaving(mode);
     try {
       const res = await fetch(`/api/events/${id}`, {
         method:  "PATCH",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({
-          name:        form.name,
-          date:        form.date,
-          time:        form.time || null,
-          venue:       form.venue || null,
-          category:    form.category || null,
-          description: form.description || null,
-          organizer:   form.organizer || null,
-          currency:    form.currency,
-          accent:      form.accent,
-          published:   form.published,
-        }),
+        body:    JSON.stringify(payload),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -408,12 +432,21 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         return;
       }
       await refetch();
-      setEditing(false);
-      setSaveMsg("Saved!"); setTimeout(() => setSaveMsg(""), 2500);
+      setSaveMsg("Saved ✓"); setTimeout(() => setSaveMsg(""), 2500);
     } catch (err) {
-      console.error("[handleSave]", err);
+      console.error("[save]", err);
       alert("Network error. Please try again.");
+    } finally {
+      setSaving("");
     }
+  };
+
+  const handleSave          = () => doSave(buildPayload(), "save");
+  const handleSaveDraft     = () => doSave(buildPayload({ published: false }), "draft");
+  const handleTogglePublish = () => {
+    const next = !form.published;
+    setForm((f: any) => ({ ...f, published: next }));
+    doSave(buildPayload({ published: next }), "publish");
   };
 
   const handleDelete = async () => {
@@ -479,6 +512,70 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     ]);
   };
 
+  const handleUndoCheckIn = async (attendeeId: string, attendeeName: string) => {
+    const reason = prompt(`Undo check-in for ${attendeeName}?\n\nOptional reason (or leave blank):`);
+    if (reason === null) return; // user cancelled
+    try {
+      const res = await fetch(`/api/attendees/${attendeeId}/undo-checkin`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ reason: reason.trim() || undefined }),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        alert(d.error ?? "Undo failed");
+        return;
+      }
+      await refetch();
+    } catch {
+      alert("Network error. Please try again.");
+    }
+  };
+
+  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image must be under 2 MB. Try compressing it first.");
+      e.target.value = "";
+      return;
+    }
+
+    setBgUploading(true);
+    // Optimistic local preview while uploading
+    const reader = new FileReader();
+    reader.onload = ev => setForm((f: any) => ({ ...f, bgImage: ev.target?.result as string }));
+    reader.readAsDataURL(file);
+
+    const sb = getSupabaseClient();
+    if (!sb) { setBgUploading(false); return; }
+
+    const ext  = file.name.split(".").pop() ?? "jpg";
+    const path = `event-images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { error } = await sb.storage.from("event-images").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+
+    if (error) {
+      console.warn("[edit event] Image upload failed:", error.message);
+      alert("Image upload failed. Please try again.");
+      setBgUploading(false);
+      return;
+    }
+
+    const { data } = sb.storage.from("event-images").getPublicUrl(path);
+    setForm((f: any) => ({ ...f, bgImage: data.publicUrl }));
+    setBgUploading(false);
+  };
+
+  const handleBgRemove = () => {
+    setForm((f: any) => ({ ...f, bgImage: null }));
+  };
+
   const handleCopyInviteLink = async (tierId: string) => {
     try {
       const res = await fetch(`/api/tiers/${tierId}/invite-token`, { method: "POST" });
@@ -493,153 +590,348 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto animate-fade-in space-y-5">
+    <div>
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      {/* ── Sticky Save Bar ──────────────────────────────────────────────── */}
+      <div
+        className="sticky top-0 z-40 flex items-center justify-between gap-3 px-4 md:px-6 py-3 border-b border-white/[0.07]"
+        style={{ background: "rgba(8,8,20,0.93)", backdropFilter: "blur(20px)" }}
+      >
+        {/* Left — back + name + live status dot */}
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/dashboard"><Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button></Link>
+          <Link href="/dashboard">
+            <Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button>
+          </Link>
           <div className="min-w-0">
-            <h1 className="font-heading font-bold text-[20px] tracking-tight truncate">{event.name}</h1>
-            <p className="text-[12px] text-[#5a5a72] mt-0.5">{formatDate(event.date)}{event.time ? ` · ${event.time}` : ""} · {event.venue || "No venue"}</p>
+            <p className="text-[14px] font-semibold text-white leading-tight truncate max-w-[180px] md:max-w-xs">
+              {form.name || "Untitled event"}
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className={`inline-block w-1.5 h-1.5 rounded-full ${form.published ? "bg-emerald-400" : "bg-white/25"}`} />
+              <span className="text-[11px] text-white/40">{form.published ? "Published" : "Draft"}</span>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {saveMsg && <span className="text-[12px] text-emerald-400">{saveMsg}</span>}
+
+        {/* Right — action buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {saveMsg && <span className="text-[12px] text-emerald-400 hidden sm:inline">{saveMsg}</span>}
+
+          {/* Preview */}
           <Link href={`/events/${event.slug}`} target="_blank">
-            <Button variant="secondary" size="sm"><Globe className="w-3.5 h-3.5" /> Public page</Button>
+            <Button variant="ghost" size="sm">
+              <Globe className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Preview</span>
+            </Button>
           </Link>
-          {editing ? (
-            <>
-              <Button variant="secondary" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
-              <Button variant="primary" size="sm" onClick={handleSave}><Save className="w-3.5 h-3.5" /> Save</Button>
-            </>
-          ) : (
-            <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>Edit event</Button>
-          )}
-          <Button variant="destructive" size="sm" onClick={handleDelete}><Trash2 className="w-3.5 h-3.5" /></Button>
+
+          {/* Save Draft */}
+          <Button variant="secondary" size="sm" onClick={handleSaveDraft} disabled={!!saving}>
+            {saving === "draft"
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <FileText className="w-3.5 h-3.5" />}
+            <span className="hidden md:inline">Save Draft</span>
+          </Button>
+
+          {/* Publish / Unpublish */}
+          <Button
+            variant="secondary" size="sm"
+            onClick={handleTogglePublish}
+            disabled={!!saving}
+            style={form.published
+              ? { color: "#fdcb6e", borderColor: "rgba(253,203,110,0.25)" }
+              : { color: "#55efc4", borderColor: "rgba(85,239,196,0.25)" }}
+          >
+            {saving === "publish"
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : form.published
+                ? <EyeOff className="w-3.5 h-3.5" />
+                : <Eye className="w-3.5 h-3.5" />}
+            <span className="hidden md:inline">{form.published ? "Unpublish" : "Publish"}</span>
+          </Button>
+
+          {/* Save Changes */}
+          <Button variant="primary" size="sm" onClick={handleSave} disabled={!!saving}>
+            {saving === "save"
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <Save className="w-3.5 h-3.5" />}
+            Save Changes
+          </Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Attendees" value={event.attendees.length} />
-        <StatCard label="Checked in" value={`${attended} (${rate}%)`} valueClass="text-emerald-400" />
-        <StatCard label={`Revenue (${event.currency})`} value={Math.round(revenue).toLocaleString()} valueClass="text-emerald-400" />
-        <StatCard label="Tiers" value={tiers.length} />
-      </div>
+      {/* ── Page body ─────────────────────────────────────────────────────── */}
+      <div className="p-4 md:p-6 max-w-6xl mx-auto animate-fade-in space-y-5">
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Stats row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard label="Tickets sold"                  value={paidAttendees.length} />
+          <StatCard label="Tickets in"                    value={ticketsIn} />
+          <StatCard label={`People admitted (${rate}%)`}  value={peopleIn}  valueClass="text-emerald-400" />
+          <StatCard label={`Revenue (${event.currency})`} value={Math.round(revenue).toLocaleString()} valueClass="text-emerald-400" />
+        </div>
 
-        {/* Left column */}
-        <div className="lg:col-span-2 space-y-5">
+        {/* Two-column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-          {/* Event details */}
-          <Card>
-            <CardHeader><CardTitle>Event details</CardTitle></CardHeader>
-            <div className="space-y-3">
-              <Field label="Event name">
-                {editing
-                  ? <Input value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} />
-                  : <p className="text-[13px] text-white/80">{event.name}</p>}
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Date">
-                  {editing
-                    ? <Input type="date" value={form.date ?? ""} onChange={e => setForm((f: any) => ({ ...f, date: e.target.value }))} />
-                    : <p className="text-[13px] text-white/80">{formatDate(event.date)}</p>}
-                </Field>
-                <Field label="Time">
-                  {editing
-                    ? <Input value={form.time ?? ""} onChange={e => setForm((f: any) => ({ ...f, time: e.target.value }))} placeholder="7:00 PM" />
-                    : <p className="text-[13px] text-white/80">{event.time || "—"}</p>}
-                </Field>
+          {/* ── Left column (2/3) ─────────────────────────────────────────── */}
+          <div className="lg:col-span-2 space-y-5">
+
+            {/* ① Ticket Tiers — top priority */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Ticket tiers</CardTitle>
+                <Button variant="secondary" size="sm" onClick={() => setShowAddTier(v => !v)}>
+                  <Plus className="w-3.5 h-3.5" /> Add tier
+                </Button>
+              </CardHeader>
+
+              <div className="flex flex-wrap items-center gap-3 text-[10px] text-white/25 mb-3 px-1">
+                <span><EyeOff className="w-3 h-3 inline mr-0.5" /> hides from buyers</span>
+                <span>·</span>
+                <span>qty = 0 → Sold Out in marketplace</span>
+                <span>·</span>
+                <span>≤ 10 remaining → "Few Tickets Left"</span>
               </div>
-              <Field label="Venue">
-                {editing
-                  ? <Input value={form.venue ?? ""} onChange={e => setForm((f: any) => ({ ...f, venue: e.target.value }))} />
-                  : <p className="text-[13px] text-white/80">{event.venue || "—"}</p>}
-              </Field>
-              <Field label="Category">
-                {editing
-                  ? <Input value={form.category ?? ""} onChange={e => setForm((f: any) => ({ ...f, category: e.target.value }))} placeholder="Music & Entertainment" />
-                  : <p className="text-[13px] text-white/80">{event.category || "—"}</p>}
-              </Field>
-              <Field label="Description">
-                {editing
-                  ? <Textarea value={form.description ?? ""} onChange={e => setForm((f: any) => ({ ...f, description: e.target.value }))} rows={3} />
-                  : <p className="text-[13px] text-white/80 whitespace-pre-line leading-relaxed">{event.description || "No description added."}</p>}
-              </Field>
-            </div>
-          </Card>
 
-          {/* Ticket tiers */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Ticket tiers</CardTitle>
-              <Button variant="secondary" size="sm" onClick={() => setShowAddTier(v => !v)}>
-                <Plus className="w-3.5 h-3.5" /> Add tier
-              </Button>
-            </CardHeader>
+              <div className="space-y-2">
+                {tiers.length === 0 && !showAddTier && (
+                  <EmptyState icon={Ticket} title="No tiers yet" description="Add ticket tiers for buyers to choose from" />
+                )}
+                {tiers.map((tier, idx) => {
+                  const sold = event.attendees.filter((a: any) => a.tierId === tier.id).length;
+                  return (
+                    <TierRow key={tier.id} tier={tier} soldCount={sold}
+                      currency={event.currency || "KES"}
+                      isFirst={idx === 0} isLast={idx === tiers.length - 1}
+                      onUpdate={handleTierUpdate} onDelete={handleTierDelete}
+                      onMove={handleTierMove} onCopyInviteLink={handleCopyInviteLink} />
+                  );
+                })}
+                {showAddTier && (
+                  <AddTierForm
+                    eventId={event.id}
+                    nextSort={tiers.length} currency={event.currency || "KES"}
+                    onAdded={tier => { setTiers(ts => [...ts, tier]); setShowAddTier(false); }}
+                    onCancel={() => setShowAddTier(false)} />
+                )}
+              </div>
+            </Card>
 
-            <div className="flex flex-wrap items-center gap-3 text-[10px] text-white/25 mb-3 px-1">
-              <span><EyeOff className="w-3 h-3 inline mr-0.5" /> hides from buyers</span>
-              <span>·</span>
-              <span>qty = 0 → Sold Out in marketplace</span>
-              <span>·</span>
-              <span>≤ 10 remaining → "Few Tickets Left"</span>
-            </div>
+            {/* ② Event Details — middle */}
+            <Card>
+              <CardHeader><CardTitle>Event details</CardTitle></CardHeader>
+              <div className="space-y-4">
 
-            <div className="space-y-2">
-              {tiers.length === 0 && !showAddTier && (
-                <EmptyState icon={Ticket} title="No tiers yet" description="Add ticket tiers for buyers to choose from" />
-              )}
-              {tiers.map((tier, idx) => {
-                const sold = event.attendees.filter((a: any) => a.tierId === tier.id).length;
-                return (
-                  <TierRow key={tier.id} tier={tier} soldCount={sold}
-                    currency={event.currency || "KES"}
-                    isFirst={idx === 0} isLast={idx === tiers.length - 1}
-                    onUpdate={handleTierUpdate} onDelete={handleTierDelete}
-                    onMove={handleTierMove} onCopyInviteLink={handleCopyInviteLink} />
-                );
-              })}
-              {showAddTier && (
-                <AddTierForm
-                  eventId={event.id}
-                  nextSort={tiers.length} currency={event.currency || "KES"}
-                  onAdded={tier => { setTiers(ts => [...ts, tier]); setShowAddTier(false); }}
-                  onCancel={() => setShowAddTier(false)} />
-              )}
-            </div>
-          </Card>
-        </div>
-
-        {/* Right column — attendees */}
-        <div>
-          <Card>
-            <CardHeader><CardTitle>Attendees ({event.attendees.length})</CardTitle></CardHeader>
-            {event.attendees.length === 0 ? (
-              <EmptyState icon={Users} title="No attendees yet" description="Share your event link to start selling" />
-            ) : (
-              <div className="space-y-0 max-h-[420px] overflow-y-auto">
-                {event.attendees.slice(0, 50).map((a: any) => (
-                  <div key={a.id} className="flex items-center gap-2 py-2.5 border-b border-white/[0.05] last:border-0">
-                    <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-[10px] text-brand-400 font-bold shrink-0">
-                      {a.name?.[0]?.toUpperCase() ?? "?"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[12px] font-medium text-white truncate">{a.name}</div>
-                      <div className="text-[10px] text-white/35 truncate">{a.email || a.phone || "—"}</div>
-                    </div>
-                    <Badge variant={a.checkedIn ? "green" : a.payStatus === "paid" ? "purple" : "gray"}>
-                      {a.checkedIn ? "In" : a.payStatus}
-                    </Badge>
+                {/* Visibility toggle — prominent, at top of section */}
+                <div
+                  className="flex items-center justify-between rounded-xl px-4 py-3 cursor-pointer select-none transition-all"
+                  style={form.published
+                    ? { background: "rgba(85,239,196,0.06)", border: "1px solid rgba(85,239,196,0.2)" }
+                    : { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+                  onClick={() => setForm((f: any) => ({ ...f, published: !f.published }))}
+                >
+                  <div>
+                    <p className={`text-[13px] font-semibold ${form.published ? "text-emerald-400" : "text-white/55"}`}>
+                      {form.published ? "Published — visible to public" : "Draft — hidden from marketplace"}
+                    </p>
+                    <p className="text-[11px] text-white/35 mt-0.5">
+                      {form.published
+                        ? "Buyers can find and purchase tickets on the marketplace"
+                        : "Save changes privately before you're ready to go live"}
+                    </p>
                   </div>
-                ))}
+                  {/* Toggle pill */}
+                  <div className={`relative h-6 w-11 rounded-full transition-colors duration-200 shrink-0 ml-4 ${
+                    form.published ? "bg-emerald-500/70" : "bg-white/15"
+                  }`}>
+                    <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                      form.published ? "translate-x-5" : "translate-x-0"
+                    }`} />
+                  </div>
+                </div>
+
+                <Field label="Event name">
+                  <Input value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Start date">
+                    <Input type="date" value={form.date ?? ""} onChange={e => setForm((f: any) => ({ ...f, date: e.target.value }))} />
+                  </Field>
+                  <Field label="Start time">
+                    <Input value={form.time ?? ""} onChange={e => setForm((f: any) => ({ ...f, time: e.target.value }))} placeholder="7:00 PM" />
+                  </Field>
+                  <Field label="End date">
+                    <Input type="date" value={form.endDate ?? ""} onChange={e => setForm((f: any) => ({ ...f, endDate: e.target.value }))} />
+                  </Field>
+                  <Field label="End time">
+                    <Input value={form.endTime ?? ""} onChange={e => setForm((f: any) => ({ ...f, endTime: e.target.value }))} placeholder="10:00 PM" />
+                  </Field>
+                </div>
+
+                <Field label="Venue">
+                  <Input value={form.venue ?? ""} onChange={e => setForm((f: any) => ({ ...f, venue: e.target.value }))} />
+                </Field>
+
+                <Field label="Category">
+                  <Select
+                    value={form.category ?? CATEGORIES[0]}
+                    onChange={e => setForm((f: any) => ({ ...f, category: e.target.value }))}
+                  >
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </Select>
+                </Field>
+
+                <Field label="Organizer name">
+                  <Input
+                    value={form.organizer ?? ""}
+                    onChange={e => setForm((f: any) => ({ ...f, organizer: e.target.value }))}
+                    placeholder="Your company or name"
+                  />
+                </Field>
+
+                <Field label="Description">
+                  <Textarea
+                    value={form.description ?? ""}
+                    onChange={e => setForm((f: any) => ({ ...f, description: e.target.value }))}
+                    rows={4}
+                  />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Currency">
+                    <Input
+                      value={form.currency ?? ""}
+                      onChange={e => setForm((f: any) => ({ ...f, currency: e.target.value }))}
+                      placeholder="KES"
+                      maxLength={5}
+                    />
+                  </Field>
+                  <Field label="Accent colour">
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="color"
+                        value={form.accent ?? "#6C5CE7"}
+                        onChange={e => setForm((f: any) => ({ ...f, accent: e.target.value }))}
+                        className="w-9 h-9 rounded-lg cursor-pointer border border-white/10 bg-transparent shrink-0"
+                      />
+                      <Input
+                        value={form.accent ?? ""}
+                        onChange={e => setForm((f: any) => ({ ...f, accent: e.target.value }))}
+                        placeholder="#6C5CE7"
+                      />
+                    </div>
+                  </Field>
+                </div>
+
               </div>
-            )}
-          </Card>
+            </Card>
+
+            {/* ③ Background Image / Branding — bottom */}
+            <Card>
+              <CardHeader><CardTitle>Background image</CardTitle></CardHeader>
+              <div className="space-y-3">
+                {form.bgImage ? (
+                  <div className="relative rounded-xl overflow-hidden h-36 border border-white/[0.08]">
+                    <img src={form.bgImage} alt="Event background" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-end p-3 gap-2">
+                      <label className="cursor-pointer flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg bg-black/70 text-white hover:bg-black/90 transition-colors">
+                        <ImagePlus className="w-3.5 h-3.5" />
+                        {bgUploading ? "Uploading…" : "Replace"}
+                        <input type="file" accept="image/*" className="hidden" onChange={handleBgUpload} disabled={bgUploading} />
+                      </label>
+                      <button
+                        onClick={handleBgRemove}
+                        className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg bg-red-500/70 text-white hover:bg-red-500/90 transition-colors"
+                      >
+                        <XCircle className="w-3.5 h-3.5" /> Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="relative flex flex-col items-center justify-center h-36 rounded-xl border border-dashed border-white/[0.15] cursor-pointer hover:border-brand-500/50 hover:bg-brand-500/5 transition-all">
+                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onChange={handleBgUpload} disabled={bgUploading} />
+                    <ImagePlus className="w-6 h-6 text-white/30 mb-2" />
+                    <p className="text-[12px] text-white/40">
+                      {bgUploading
+                        ? "Uploading…"
+                        : <><strong className="text-white/60">Click to upload</strong> · max 2 MB</>}
+                    </p>
+                  </label>
+                )}
+                <p className="text-[11px] text-white/25">
+                  Shown as the hero on the public event page and marketplace card.
+                </p>
+              </div>
+            </Card>
+
+            {/* ④ Danger zone */}
+            <div
+              className="flex items-center justify-between rounded-xl px-4 py-3"
+              style={{ background: "rgba(220,38,38,0.05)", border: "1px solid rgba(220,38,38,0.15)" }}
+            >
+              <div>
+                <p className="text-[13px] font-medium text-red-400">Delete event</p>
+                <p className="text-[11px] text-white/35 mt-0.5">
+                  Permanently removes this event and all its data. Cannot be undone.
+                </p>
+              </div>
+              <Button variant="destructive" size="sm" onClick={handleDelete}>
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </Button>
+            </div>
+
+          </div>
+
+          {/* ── Right column — Attendees ──────────────────────────────────── */}
+          <div>
+            <Card>
+              <CardHeader><CardTitle>Attendees ({event.attendees.length})</CardTitle></CardHeader>
+              {event.attendees.length === 0 ? (
+                <EmptyState icon={Users} title="No attendees yet" description="Share your event link to start selling" />
+              ) : (
+                <div className="space-y-0 max-h-[540px] overflow-y-auto">
+                  {event.attendees.slice(0, 50).map((a: any) => {
+                    const cap       = a.tierCapacity ?? 1;
+                    const count     = a.checkInCount ?? 0;
+                    const fullyUsed = a.checkedIn;
+                    const partial   = count > 0 && !fullyUsed;
+                    const isOrg     = userRole === "organiser" || userRole === "super_admin";
+                    return (
+                      <div key={a.id} className="flex items-center gap-2 py-2.5 border-b border-white/[0.05] last:border-0">
+                        <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-[10px] text-brand-400 font-bold shrink-0">
+                          {a.name?.[0]?.toUpperCase() ?? "?"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[12px] font-medium text-white truncate">{a.name}</div>
+                          <div className="text-[10px] text-white/35 truncate">
+                            {a.email || a.phone || "—"}
+                            {count > 0 && cap > 1 && (
+                              <span className="ml-1.5 text-emerald-400/70">· {count}/{cap} entries</span>
+                            )}
+                          </div>
+                        </div>
+                        <Badge variant={fullyUsed ? "green" : partial ? "purple" : a.payStatus === "paid" ? "purple" : "gray"}>
+                          {fullyUsed ? "In" : partial ? `${count}/${cap}` : a.payStatus}
+                        </Badge>
+                        {isOrg && count > 0 && (
+                          <button
+                            onClick={() => handleUndoCheckIn(a.id, a.name)}
+                            className="text-[10px] px-2 py-1 rounded-md text-white/40 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                            title="Undo last check-in"
+                          >
+                            ↩
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </div>
+
         </div>
       </div>
     </div>

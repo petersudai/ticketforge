@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MarketingNav } from "@/components/marketing/Nav";
 import { MarketingFooter } from "@/components/marketing/Footer";
@@ -12,6 +12,76 @@ import {
   Users, Ticket, TrendingUp, Smartphone, Clock,
   CreditCard, Lock, Sparkles,
 } from "lucide-react";
+
+// ── Animation keyframes ───────────────────────────────────────────────
+
+function PageStyles() {
+  return (
+    <style>{`
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(26px); }
+        to   { opacity: 1; transform: translateY(0);    }
+      }
+      @keyframes floatY {
+        0%, 100% { transform: translateY(0px);   }
+        50%       { transform: translateY(-10px); }
+      }
+      @keyframes glowPulse {
+        0%, 100% { opacity: 1;   }
+        50%       { opacity: 0.5; }
+      }
+      /* Scroll-triggered reveal — toggled by JS adding .in-view */
+      .reveal {
+        opacity: 0;
+        transform: translateY(22px);
+        transition: opacity 0.6s cubic-bezier(0.4,0,0.2,1),
+                    transform 0.6s cubic-bezier(0.4,0,0.2,1);
+      }
+      .reveal.in-view { opacity: 1; transform: translateY(0); }
+    `}</style>
+  );
+}
+
+// ── useInView — fires once when element enters viewport ───────────────
+
+function useInView(threshold = 0.12) {
+  const ref  = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect(); } },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, inView };
+}
+
+// ── Reveal wrapper — wraps any child with a scroll-triggered fade+rise ─
+
+function Reveal({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const { ref, inView } = useInView();
+  return (
+    <div
+      ref={ref}
+      className={`reveal${inView ? " in-view" : ""} ${className}`}
+      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
+    >
+      {children}
+    </div>
+  );
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -48,11 +118,11 @@ function SectionHeading({ children, sub }: { children: React.ReactNode; sub?: st
 function Hero() {
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center pt-[64px] px-6 overflow-hidden">
-      {/* Background glow */}
+      {/* Background glow — slow pulse keeps the hero breathing */}
       <div className="absolute inset-0 pointer-events-none">
-        <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 800, height: 600, background: "radial-gradient(ellipse, rgba(108,92,231,0.18) 0%, transparent 70%)", borderRadius: "50%" }} />
-        <div style={{ position: "absolute", top: "10%", left: "15%", width: 300, height: 300, background: "radial-gradient(ellipse, rgba(108,92,231,0.08) 0%, transparent 70%)", borderRadius: "50%" }} />
-        <div style={{ position: "absolute", top: "30%", right: "10%", width: 250, height: 250, background: "radial-gradient(ellipse, rgba(0,165,80,0.06) 0%, transparent 70%)", borderRadius: "50%" }} />
+        <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 800, height: 600, background: "radial-gradient(ellipse, rgba(108,92,231,0.18) 0%, transparent 70%)", borderRadius: "50%", animation: "glowPulse 5s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", top: "10%", left: "15%", width: 300, height: 300, background: "radial-gradient(ellipse, rgba(108,92,231,0.08) 0%, transparent 70%)", borderRadius: "50%", animation: "glowPulse 7s 1s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", top: "30%", right: "10%", width: 250, height: 250, background: "radial-gradient(ellipse, rgba(0,165,80,0.06) 0%, transparent 70%)", borderRadius: "50%", animation: "glowPulse 6s 2s ease-in-out infinite" }} />
       </div>
 
       {/* Grid texture */}
@@ -60,24 +130,28 @@ function Hero() {
 
       <div className="relative z-10 max-w-5xl mx-auto text-center">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 text-[12px] text-emerald-400 font-semibold mb-8">
+        <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 text-[12px] text-emerald-400 font-semibold mb-8"
+          style={{ animation: "fadeInUp 0.5s ease both" }}>
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-live-pulse" />
           Now live — M-Pesa STK Push built in
         </div>
 
         {/* Headline */}
-        <h1 className="font-heading font-extrabold text-[52px] md:text-[72px] lg:text-[84px] tracking-[-0.03em] leading-[0.95] text-white mb-6">
+        <h1 className="font-heading font-extrabold text-[52px] md:text-[72px] lg:text-[84px] tracking-[-0.03em] leading-[0.95] text-white mb-6"
+          style={{ animation: "fadeInUp 0.6s 0.1s ease both" }}>
           Sell tickets.<br />
           <GradientText>Get paid instantly.</GradientText>
         </h1>
 
         {/* Sub */}
-        <p className="text-[18px] md:text-[20px] text-white/50 max-w-[600px] mx-auto leading-relaxed mb-10">
+        <p className="text-[18px] md:text-[20px] text-white/50 max-w-[600px] mx-auto leading-relaxed mb-10"
+          style={{ animation: "fadeInUp 0.6s 0.22s ease both" }}>
           The ticketing platform built for African events. M-Pesa payments, scannable QR tickets, and real-time check-in analytics — all in one place.
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14"
+          style={{ animation: "fadeInUp 0.6s 0.34s ease both" }}>
           <Link
             href="/demo"
             className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-[15px] px-7 py-3.5 rounded-[12px] transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(108,92,231,0.3)]"
@@ -94,7 +168,8 @@ function Hero() {
         </div>
 
         {/* Social proof */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-[13px] text-white/35">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-[13px] text-white/35"
+          style={{ animation: "fadeInUp 0.6s 0.44s ease both" }}>
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             No credit card required
@@ -112,9 +187,11 @@ function Hero() {
         </div>
       </div>
 
-      {/* Dashboard preview */}
-      <div className="relative z-10 mt-16 w-full max-w-5xl mx-auto px-4">
-        <div className="relative rounded-2xl overflow-hidden border border-white/[0.08]" style={{ background: "rgba(17,17,24,0.8)", backdropFilter: "blur(20px)" }}>
+      {/* Dashboard preview — outer div floats, inner div fades in */}
+      <div className="relative z-10 mt-16 w-full max-w-5xl mx-auto px-4"
+        style={{ animation: "floatY 5s 1.3s ease-in-out infinite" }}>
+        <div className="relative rounded-2xl overflow-hidden border border-white/[0.08]"
+          style={{ background: "rgba(17,17,24,0.8)", backdropFilter: "blur(20px)", animation: "fadeInUp 0.7s 0.55s ease both" }}>
           {/* Fake toolbar */}
           <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
             <div className="flex gap-1.5">
@@ -272,10 +349,12 @@ function Features() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map((f, i) => {
             const Icon = f.icon;
+            // Stagger: 3-col grid → each col gets its own delay tier
+            const delay = (i % 3) * 100 + Math.floor(i / 3) * 60;
             return (
+              <Reveal key={f.title} delay={delay}>
               <div
-                key={f.title}
-                className="group relative rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02]"
+                className="group relative rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] h-full"
                 style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
               >
                 <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `radial-gradient(ellipse at top left, ${f.color}08 0%, transparent 60%)` }} />
@@ -290,6 +369,7 @@ function Features() {
                   <p className="text-[13px] text-white/45 leading-relaxed">{f.desc}</p>
                 </div>
               </div>
+              </Reveal>
             );
           })}
         </div>
@@ -336,18 +416,20 @@ function HowItWorks() {
             </div>
             <div className="space-y-6">
               {organiserSteps.map((s, i) => (
-                <div key={s.n} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full border border-brand-500/40 flex items-center justify-center text-[11px] font-bold font-heading text-brand-400 shrink-0">
-                      {s.n}
+                <Reveal key={s.n} delay={i * 100}>
+                  <div className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 rounded-full border border-brand-500/40 flex items-center justify-center text-[11px] font-bold font-heading text-brand-400 shrink-0">
+                        {s.n}
+                      </div>
+                      {i < organiserSteps.length - 1 && <div className="w-px flex-1 bg-brand-500/15 mt-2 min-h-[24px]" />}
                     </div>
-                    {i < organiserSteps.length - 1 && <div className="w-px flex-1 bg-brand-500/15 mt-2 min-h-[24px]" />}
+                    <div className="pb-6">
+                      <div className="font-heading font-bold text-[14px] text-white mb-1">{s.title}</div>
+                      <div className="text-[13px] text-white/45 leading-relaxed">{s.desc}</div>
+                    </div>
                   </div>
-                  <div className="pb-6">
-                    <div className="font-heading font-bold text-[14px] text-white mb-1">{s.title}</div>
-                    <div className="text-[13px] text-white/45 leading-relaxed">{s.desc}</div>
-                  </div>
-                </div>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -362,18 +444,20 @@ function HowItWorks() {
             </div>
             <div className="space-y-6">
               {attendeeSteps.map((s, i) => (
-                <div key={s.n} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full border border-emerald-500/40 flex items-center justify-center text-[11px] font-bold font-heading text-emerald-400 shrink-0">
-                      {s.n}
+                <Reveal key={s.n} delay={i * 100}>
+                  <div className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 rounded-full border border-emerald-500/40 flex items-center justify-center text-[11px] font-bold font-heading text-emerald-400 shrink-0">
+                        {s.n}
+                      </div>
+                      {i < attendeeSteps.length - 1 && <div className="w-px flex-1 bg-emerald-500/15 mt-2 min-h-[24px]" />}
                     </div>
-                    {i < attendeeSteps.length - 1 && <div className="w-px flex-1 bg-emerald-500/15 mt-2 min-h-[24px]" />}
+                    <div className="pb-6">
+                      <div className="font-heading font-bold text-[14px] text-white mb-1">{s.title}</div>
+                      <div className="text-[13px] text-white/45 leading-relaxed">{s.desc}</div>
+                    </div>
                   </div>
-                  <div className="pb-6">
-                    <div className="font-heading font-bold text-[14px] text-white mb-1">{s.title}</div>
-                    <div className="text-[13px] text-white/45 leading-relaxed">{s.desc}</div>
-                  </div>
-                </div>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -548,26 +632,27 @@ function Testimonials() {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {testimonials.map(t => (
-            <div
-              key={t.name}
-              className="rounded-2xl p-6"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              <div className="flex gap-1 mb-4">
-                {[1,2,3,4,5].map(i => <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />)}
-              </div>
-              <p className="text-[14px] text-white/65 leading-relaxed mb-5">&ldquo;{t.quote}&rdquo;</p>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold font-heading" style={{ background: `${t.color}20`, color: t.color }}>
-                  {t.avatar}
+          {testimonials.map((t, i) => (
+            <Reveal key={t.name} delay={(i % 3) * 100}>
+              <div
+                className="rounded-2xl p-6 h-full"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                <div className="flex gap-1 mb-4">
+                  {[1,2,3,4,5].map(i => <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />)}
                 </div>
-                <div>
-                  <div className="text-[13px] font-semibold text-white">{t.name}</div>
-                  <div className="text-[11px] text-white/35">{t.role}</div>
+                <p className="text-[14px] text-white/65 leading-relaxed mb-5">&ldquo;{t.quote}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold font-heading" style={{ background: `${t.color}20`, color: t.color }}>
+                    {t.avatar}
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-white">{t.name}</div>
+                    <div className="text-[11px] text-white/35">{t.role}</div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -657,11 +742,11 @@ function Stats() {
             { value: "KES 12M+", label: "Processed via M-Pesa", color: "#55efc4" },
             { value: "200+", label: "Events hosted", color: "#74b9ff" },
             { value: "99.9%", label: "Uptime SLA", color: "#fdcb6e" },
-          ].map(s => (
-            <div key={s.label}>
+          ].map((s, i) => (
+            <Reveal key={s.label} delay={i * 90}>
               <div className="font-heading font-extrabold text-[38px] md:text-[44px] tracking-tight mb-2" style={{ color: s.color }}>{s.value}</div>
               <div className="text-[13px] text-white/35">{s.label}</div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -766,23 +851,28 @@ function FinalCTA() {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────
+// ── Scroll watcher — isolated so useSearchParams is inside a Suspense ──
 
-export default function HomePage() {
+function ScrollWatcher() {
   const searchParams = useSearchParams();
-
-  // When navigating from another page with ?scroll=section, auto-scroll after load
   useEffect(() => {
     const section = searchParams.get("scroll");
     if (!section) return;
     const el = document.getElementById(section);
     if (el) {
-      // Small delay to ensure layout is complete
       setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
     }
   }, [searchParams]);
+  return null;
+}
+
+// ── Page ──────────────────────────────────────────────────────────────
+
+export default function HomePage() {
   return (
     <>
+      <PageStyles />
+      <Suspense fallback={null}><ScrollWatcher /></Suspense>
       <MarketingNav />
       <Hero />
       <TrustBar />

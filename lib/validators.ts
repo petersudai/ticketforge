@@ -58,9 +58,11 @@ export const CreateEventSchema = z.object({
   name:        z.string().min(3, "Event name is too short").max(200).trim(),
   slug:        z.string().max(80).optional(),
   date:        z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD format"),
-  time:        z.string().max(20).optional().nullable(),
-  venue:       z.string().max(200).optional().nullable(),
-  organizer:   z.string().max(100).optional().nullable(),
+  time:        z.string().min(1, "Event time is required").max(20),
+  endTime:     z.string().max(20).optional().nullable(),
+  endDate:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  venue:       z.string().min(1, "Venue is required").max(200).trim(),
+  organizer:   z.string().min(1, "Organizer / brand name is required").max(100).trim(),
   category:    z.string().max(50).optional().nullable(),
   description: z.string().max(2000).optional().nullable(),
   capacity:    z.number().int().min(1).max(1_000_000).optional().nullable(),
@@ -117,7 +119,9 @@ export const ScanSchema = z.object({
 export const MpesaInitSchema = z.object({
   phone:         z.string()
     .regex(/^(\+?254|0)[17]\d{8}$/, "Invalid Kenyan phone number"),
-  amount:        z.number().int().min(1, "Amount must be at least 1 KES").max(150_000),
+  // Amount is intentionally NOT accepted from the client.
+  // The server computes expectedAmount = tier.price × quantity to prevent tampering.
+  quantity:      z.number().int().min(1, "Quantity must be at least 1").max(20, "Maximum 20 tickets per purchase").default(1),
   tierId:        z.string().min(1),
   eventId:       z.string().min(1),
   eventName:     z.string().min(1).max(200),

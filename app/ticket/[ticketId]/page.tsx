@@ -1,62 +1,29 @@
 "use client";
 
-import { use, useState, useEffect, useRef, createRef } from "react";
-import { createRoot } from "react-dom/client";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { formatDate } from "@/lib/utils";
 import { TicketPreview } from "@/components/shared/TicketPreview";
-import type { Event, Attendee } from "@/store/useStore";
 import {
-  Download, FileDown, QrCode, Calendar, MapPin,
+  Download, FileDown,
   Ticket, CheckCircle2, AlertTriangle, Zap, Share2,
 } from "lucide-react";
 
-// ── Render TicketPreview (the admin design) to a canvas ───────────────
-// This is the SINGLE SOURCE OF TRUTH: the exact same component used in
-// the admin /tickets page is rendered here for download.
-async function renderTicketPreviewToCanvas(
-  event: Event,
-  attendee: Attendee,
-  layout: "dark" | "minimal" | "bold" = "dark"
-): Promise<HTMLCanvasElement> {
+// ── Capture the already-rendered on-page ticket to a canvas ──────────
+// We capture the visible TicketPreview (id="tf-ticket-display") directly.
+// This eliminates the off-screen rendering bug that caused right-side
+// clipping on narrow viewports, and removes a 600 ms QR-wait delay.
+//
+// Scale 2 (not 3) keeps PNG ~2.25× smaller while staying retina-quality.
+async function captureTicketCanvas(scale = 2): Promise<HTMLCanvasElement> {
   const { default: html2canvas } = await import("html2canvas");
-
-  // Mount a hidden TicketPreview into an off-screen container
-  const container = document.createElement("div");
-  container.style.cssText =
-    "position:fixed;top:-9999px;left:-9999px;z-index:-1;pointer-events:none;";
-  document.body.appendChild(container);
-
-  // Use React's createRoot to render the real component
-  const root = createRoot(container);
-  await new Promise<void>((resolve) => {
-    root.render(
-      <TicketPreview
-        id="tf-download-canvas"
-        event={event}
-        attendee={attendee}
-        layout={layout}
-        showBarcode={true}
-        showLogo={true}
-      />
-    );
-    // Wait for QR code to render (useEffect fires after paint)
-    setTimeout(resolve, 600);
-  });
-
-  const el = container.querySelector("#tf-download-canvas") as HTMLElement;
-  if (!el) throw new Error("Ticket element not found");
-
-  const canvas = await (html2canvas as any)(el, {
-    scale: 3,
+  const el = document.getElementById("tf-ticket-display");
+  if (!el) throw new Error("Ticket element not found in DOM");
+  return (html2canvas as any)(el, {
+    scale,
     useCORS: true,
-    backgroundColor: null,
+    backgroundColor: null,   // ticket has its own solid bg; no white fill needed
     logging: false,
   });
-
-  root.unmount();
-  document.body.removeChild(container);
-  return canvas;
 }
 
 // ── Main page ─────────────────────────────────────────────────────────
@@ -110,7 +77,7 @@ export default function TicketDownloadPage({
     if (!event || !attendee) return;
     setDownloading("png");
     try {
-      const canvas = await renderTicketPreviewToCanvas(event, attendee);
+      const canvas = await captureTicketCanvas(2);
       const link = document.createElement("a");
       link.download = `ticket-${ticketId}.png`;
       link.href = canvas.toDataURL("image/png");
@@ -126,13 +93,15 @@ export default function TicketDownloadPage({
     if (!event || !attendee) return;
     setDownloading("pdf");
     try {
-      const canvas = await renderTicketPreviewToCanvas(event, attendee);
+      const canvas = await captureTicketCanvas(2);
       const { jsPDF } = await import("jspdf");
-      const imgData = canvas.toDataURL("image/png");
-      const pw = 595;
+      // JPEG instead of PNG: ticket has a solid dark background so no
+      // transparency is lost, and file size drops from ~10 MB to ~200–400 KB.
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const pw = 595; // A4 width in points
       const ph = Math.round((canvas.height / canvas.width) * pw);
       const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: [pw, ph] });
-      pdf.addImage(imgData, "PNG", 0, 0, pw, ph);
+      pdf.addImage(imgData, "JPEG", 0, 0, pw, ph);
       pdf.save(`ticket-${ticketId}.pdf`);
     } catch (e) {
       console.error("PDF download failed:", e);
@@ -215,24 +184,52 @@ export default function TicketDownloadPage({
     );
   }
 
+  // ── Fully redeemed ───────────────────────────────────────────────────
+  // checkedIn = true means ALL capacity slots have been used (not just first scan).
+  // The QR still renders so staff can verify identity, but we warn the buyer.
+  const tierCapacity    = rawAttendee?.tier?.capacity ?? 1;
+  const checkInCount    = rawAttendee?.checkInCount   ?? 0;
+  const fullyRedeemed   = attendee.checkedIn === true || checkInCount >= tierCapacity;
+  const partiallyUsed   = checkInCount > 0 && !fullyRedeemed;
+
   // ── Valid ticket ─────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#06060e] flex flex-col items-center py-8 px-4">
       <LogoHeader />
 
       <div className="w-full max-w-[580px]">
-        {/* Confirmed banner */}
-        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2.5 mb-6">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span className="text-[13px] text-emerald-300 font-medium">
-            Ticket confirmed — you&apos;re registered for{" "}
-            <strong className="text-white">{event.name}</strong>!
-          </span>
-        </div>
+        {/* Status banner */}
+        {fullyRedeemed ? (
+          <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/25 rounded-xl px-4 py-2.5 mb-6">
+            <CheckCircle2 className="w-4 h-4 text-rose-400 shrink-0" />
+            <span className="text-[13px] text-rose-300 font-medium">
+              This ticket has been fully used
+              {tierCapacity > 1 ? ` (${tierCapacity} of ${tierCapacity} entries redeemed)` : ""}.
+            </span>
+          </div>
+        ) : partiallyUsed ? (
+          <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-2.5 mb-6">
+            <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-[13px] text-amber-300 font-medium">
+              {checkInCount} of {tierCapacity} entries used &mdash; {tierCapacity - checkInCount} remaining.
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2.5 mb-6">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-[13px] text-emerald-300 font-medium">
+              Ticket confirmed — you&apos;re registered for{" "}
+              <strong className="text-white">{event.name}</strong>!
+              {tierCapacity > 1 ? ` Admits ${tierCapacity} people.` : ""}
+            </span>
+          </div>
+        )}
 
         {/* ── THE TICKET — same TicketPreview used in admin /tickets page ── */}
+        {/* id="tf-ticket-display" is used by captureTicketCanvas() for download */}
         <div className="overflow-x-auto mb-5">
           <TicketPreview
+            id="tf-ticket-display"
             event={event}
             attendee={attendee}
             layout="dark"

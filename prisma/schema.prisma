@@ -112,6 +112,8 @@ model Event {
   slug        String
   date        String
   time        String?
+  endTime     String?  // optional end time, e.g. "10:00 PM"
+  endDate     String?  // optional end date for multi-day events (YYYY-MM-DD)
   venue       String?
   organizer   String?
   category    String?
@@ -130,6 +132,7 @@ model Event {
 
   tiers     Tier[]
   attendees Attendee[]
+  orders    Order[]
 
   @@unique([orgId, slug])
 }
@@ -150,6 +153,7 @@ model Tier {
 
   event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
   attendees Attendee[]
+  orders    Order[]
 }
 
 model Attendee {
@@ -161,31 +165,43 @@ model Attendee {
   ticketId           String    @unique
   payStatus          String    @default("pending")
   pricePaid          Float     @default(0)
-  checkedIn          Boolean   @default(false)
-  checkedInAt        DateTime?
+  checkedIn          Boolean   @default(false)  // true = FULLY redeemed (checkInCount >= maxCheckIns)
+  checkedInAt        DateTime?                   // timestamp of FIRST check-in
+  checkInCount       Int       @default(0)       // how many times this ticket has been scanned in
+  lastCheckInAt      DateTime?                   // timestamp of most recent check-in (for 6s cooldown)
   emailSent          Boolean   @default(false)
   source             String    @default("manual")
   mpesaReceiptNumber String?
   downloadCount      Int       @default(0)
   lastDownloadAt     DateTime?
+  // Order architecture fields (null on pre-Order legacy records)
+  orderId            String?                     // links to parent Order
+  maxCheckIns        Int?                        // overrides tier.capacity for scanner; null = use tier.capacity (legacy)
+  slotIndex          Int       @default(0)       // 0 = primary slot (counts toward tier.quantity); >0 = expanded extra
   eventId            String
   tierId             String?
 
   event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   tier  Tier?  @relation(fields: [tierId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id])
   scans Scan[]
 
   createdAt DateTime @default(now())
 }
 
 model Scan {
-  id         String   @id @default(cuid())
-  ticketId   String
-  attendeeId String?
-  eventId    String
-  result     String
-  overridden Boolean  @default(false)
-  scannedAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  ticketId    String
+  attendeeId  String?
+  eventId     String
+  result      String                    // "valid" | "override" | "invalid" | "duplicate" | "over_capacity" | "cooldown" | "undone"
+  overridden  Boolean  @default(false)
+  entryNumber Int?                      // which entry this scan represents (1st, 2nd, 3rd …)
+  scannerId   String?                   // supabaseUserId of the scanner at scan time
+  undoneAt    DateTime?                 // set when an organiser undoes this check-in
+  undoneBy    String?                   // supabaseUserId of the organiser who undid it
+  undoneReason String?                  // optional reason text provided by organiser
+  scannedAt   DateTime @default(now())
 
   attendee Attendee? @relation(fields: [attendeeId], references: [id])
 }
@@ -200,18 +216,45 @@ model PendingPayment {
   id                 String   @id @default(cuid())
   checkoutRequestId  String   @unique
   merchantRequestId  String?
-  ticketId           String   @unique  // pre-generated, used for attendee
+  ticketId           String   @unique  // pre-generated, used for lead attendee
   eventId            String
   tierId             String
   attendeeName       String
   attendeeEmail      String?
   phone              String
+  quantity           Int      @default(1) // number of tier slots purchased
   expectedAmount     Float    // the amount we told Safaricom — verified on callback
-  status             String   @default("pending") // "pending" | "completed" | "failed"
+  status             String   @default("pending") // "pending" | "processing" | "completed" | "failed"
+  orderId            String?  // set once Order is created in callback
   mpesaReceiptNumber String?
   resultDesc         String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+// ── Orders (one per purchase, groups individual Attendee tickets) ─────
+// Created atomically when payment is confirmed (M-Pesa callback or free register).
+// Allows buyers to access all their tickets from a single purchase in one place.
+
+model Order {
+  id                 String   @id @default(cuid())
+  eventId            String
+  tierId             String
+  buyerName          String
+  buyerEmail         String?
+  buyerPhone         String
+  totalPaid          Float    @default(0)
+  currency           String   @default("KES")
+  mpesaReceiptNumber String?
+  payStatus          String   @default("pending")  // "free" | "paid"
+  quantity           Int      @default(1)           // tier slots purchased
+  ticketCount        Int      @default(1)           // = quantity × tier.capacity (individual entry tickets)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tier      Tier       @relation(fields: [tierId], references: [id])
+  attendees Attendee[]
 }
 
 // ── User profiles (RBAC) ──────────────────────────────────────────────

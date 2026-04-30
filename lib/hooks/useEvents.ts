@@ -43,7 +43,20 @@ export function useEvents(): UseEventsResult {
       }
 
       const data = await res.json();
-      setEvents(Array.isArray(data) ? data : []);
+      // Flatten attendee.tier objects into string + tierCapacity so all
+      // components can use tier as a plain string (the store type contract).
+      const normalized = Array.isArray(data)
+        ? data.map((ev: any) => ({
+            ...ev,
+            attendees: (ev.attendees ?? []).map((a: any) => {
+              if (a.tier && typeof a.tier === "object") {
+                return { ...a, tier: a.tier.name ?? "", tierCapacity: a.tier.capacity ?? 1 };
+              }
+              return a;
+            }),
+          }))
+        : [];
+      setEvents(normalized);
     } catch (err: any) {
       setError(err.message ?? "Network error");
       setEvents([]);

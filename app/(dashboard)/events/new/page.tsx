@@ -7,6 +7,7 @@ import { slugify, formatDate } from "@/lib/utils";
 import { Plus, Trash2, Upload, Save, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tier } from "@/store/useStore";
 import { getSupabaseClient } from "@/lib/supabase";
+import { CATEGORIES } from "@/lib/constants/categories";
 
 const COLORS = [
   { label: "Purple", value: "#6C5CE7" },
@@ -14,11 +15,6 @@ const COLORS = [
   { label: "Coral", value: "#e17055" },
   { label: "Blue", value: "#0984e3" },
   { label: "Amber", value: "#fdcb6e" },
-];
-
-const CATEGORIES = [
-  "Music & Entertainment", "Corporate", "Community & Social",
-  "Sports & Fitness", "Arts & Culture", "Education", "Other",
 ];
 
 const TIER_PRESETS = [
@@ -143,12 +139,13 @@ function newTier(preset?: typeof TIER_PRESETS[0]): any {
 
 export default function NewEventPage() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
+  const [saving,  setSaving]  = useState(false);
   const [bgImage, setBgImage] = useState<string | null>(null);
-  const [tiers, setTiers] = useState<any[]>([newTier(TIER_PRESETS[1])]);
+  const [tiers,   setTiers]   = useState<any[]>([newTier(TIER_PRESETS[1])]);
+  const [errors,  setErrors]  = useState<string[]>([]);
   const [form, setForm] = useState({
-    name: "", date: "", time: "", venue: "", organizer: "",
-    category: "Music & Entertainment", capacity: "", currency: "KES",
+    name: "", date: "", time: "", endTime: "", endDate: "", venue: "", organizer: "",
+    category: CATEGORIES[0], capacity: "", currency: "KES",
     slug: "", description: "", accent: "#6C5CE7", style: "dark",
     mpesaSc: "",
   });
@@ -208,8 +205,33 @@ export default function NewEventPage() {
     });
   };
 
+  const validate = (): string[] => {
+    const errs: string[] = [];
+    if (!form.name.trim())      errs.push("Event name is required");
+    if (!form.date)             errs.push("Event date is required");
+    if (!form.time.trim())      errs.push("Event time is required");
+    if (!form.venue.trim())     errs.push("Venue is required");
+    if (!form.organizer.trim()) errs.push("Organizer / brand name is required");
+
+    const visibleTiers = tiers.filter(t => !t.hidden);
+    if (visibleTiers.length === 0) {
+      errs.push("At least one visible (non-hidden) ticket tier is required");
+    }
+    tiers.forEach((t, i) => {
+      if (!t.name.trim())  errs.push(`Tier ${i + 1}: name is required`);
+      if (t.quantity < 1)  errs.push(`Tier ${i + 1}: quantity must be at least 1`);
+    });
+    return errs;
+  };
+
   const handleSave = async () => {
-    if (!form.name.trim()) return;
+    const validationErrors = validate();
+    if (validationErrors.length > 0) {
+      setErrors(validationErrors);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    setErrors([]);
     setSaving(true);
 
     try {
@@ -250,27 +272,43 @@ export default function NewEventPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={() => router.back()}>Cancel</Button>
-          <Button variant="primary" size="sm" onClick={handleSave} disabled={saving || !form.name}>
-            <Save className="w-3.5 h-3.5" /> Save event
+          <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
+            <Save className="w-3.5 h-3.5" /> {saving ? "Saving…" : "Save & Publish"}
           </Button>
         </div>
       </div>
+
+      {/* Validation errors */}
+      {errors.length > 0 && (
+        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/8 px-4 py-3">
+          <p className="text-[12px] font-semibold text-red-400 mb-1.5">Please fix the following before publishing:</p>
+          <ul className="space-y-1">
+            {errors.map((e, i) => (
+              <li key={i} className="text-[11px] text-red-400/80 flex items-start gap-1.5">
+                <span className="mt-0.5 shrink-0">•</span>{e}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="flex flex-col xl:grid xl:grid-cols-[1fr_300px] gap-5">
         {/* Left column */}
         <div className="space-y-4">
           <Card>
             <CardHeader><CardTitle>Event details</CardTitle></CardHeader>
-            <Field label="Event name">
+            <Field label="Event name *">
               <Input placeholder="e.g. Nairobi Jazz Night 2025" value={form.name} onChange={e => set("name", e.target.value)} />
             </Field>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Date"><Input type="date" value={form.date} onChange={e => set("date", e.target.value)} /></Field>
-              <Field label="Time"><Input placeholder="7:00 PM" value={form.time} onChange={e => set("time", e.target.value)} /></Field>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Field label="Start date *"><Input type="date" value={form.date} onChange={e => set("date", e.target.value)} /></Field>
+              <Field label="Start time *"><Input placeholder="7:00 PM" value={form.time} onChange={e => set("time", e.target.value)} /></Field>
+              <Field label="End date"><Input type="date" value={form.endDate} onChange={e => set("endDate", e.target.value)} /></Field>
+              <Field label="End time"><Input placeholder="10:00 PM" value={form.endTime} onChange={e => set("endTime", e.target.value)} /></Field>
             </div>
-            <Field label="Venue"><Input placeholder="e.g. KICC, Nairobi" value={form.venue} onChange={e => set("venue", e.target.value)} /></Field>
+            <Field label="Venue *"><Input placeholder="e.g. KICC, Nairobi" value={form.venue} onChange={e => set("venue", e.target.value)} /></Field>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Field label="Organizer"><Input placeholder="Org name" value={form.organizer} onChange={e => set("organizer", e.target.value)} /></Field>
+              <Field label="Organizer *"><Input placeholder="Org name" value={form.organizer} onChange={e => set("organizer", e.target.value)} /></Field>
               <Field label="Category">
                 <Select value={form.category} onChange={e => set("category", e.target.value)}>
                   {CATEGORIES.map(c => <option key={c}>{c}</option>)}
@@ -400,8 +438,8 @@ export default function NewEventPage() {
             </div>
           </Card>
 
-          <Button variant="primary" size="lg" className="w-full" onClick={handleSave} disabled={saving || !form.name}>
-            <Save className="w-4 h-4" /> Save event
+          <Button variant="primary" size="lg" className="w-full" onClick={handleSave} disabled={saving}>
+            <Save className="w-4 h-4" /> {saving ? "Saving…" : "Save & Publish"}
           </Button>
         </div>
       </div>
