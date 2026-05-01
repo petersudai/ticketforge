@@ -43,9 +43,16 @@ export async function middleware(req: NextRequest) {
 
   if (!isProtected && !isSessionOnly) return NextResponse.next();
 
-  // Supabase not configured in env — pass through (local dev without .env.local)
+  // Supabase not configured — block hard in production, warn in dev
   if (!SUPABASE_URL || !SUPABASE_ANON) {
-    console.warn("[middleware] Supabase not configured — skipping auth check");
+    if (process.env.NODE_ENV === "production") {
+      // Fail closed: never expose protected routes when auth is misconfigured
+      return NextResponse.json(
+        { error: "Service unavailable — auth not configured" },
+        { status: 503 }
+      );
+    }
+    console.warn("[middleware] Supabase not configured — skipping auth check (dev only)");
     return NextResponse.next();
   }
 
