@@ -10,20 +10,41 @@ import {
 
 // ── Capture the already-rendered on-page ticket to a canvas ──────────
 // We capture the visible TicketPreview (id="tf-ticket-display") directly.
-// This eliminates the off-screen rendering bug that caused right-side
-// clipping on narrow viewports, and removes a 600 ms QR-wait delay.
+//
+// Problem: html2canvas respects overflow clipping on ancestor elements.
+// The ticket (540 px wide) sits inside an overflow-x:auto wrapper that is
+// only ~343 px wide on a 375 px phone, so the right portion gets clipped.
+//
+// Fix: temporarily set overflow-x:visible on the parent during capture,
+// pass explicit width/height, and widen the virtual window so html2canvas
+// never needs to scroll-clip. Original style is restored in a finally block.
 //
 // Scale 2 (not 3) keeps PNG ~2.25× smaller while staying retina-quality.
 async function captureTicketCanvas(scale = 2): Promise<HTMLCanvasElement> {
   const { default: html2canvas } = await import("html2canvas");
   const el = document.getElementById("tf-ticket-display");
   if (!el) throw new Error("Ticket element not found in DOM");
-  return (html2canvas as any)(el, {
-    scale,
-    useCORS: true,
-    backgroundColor: null,   // ticket has its own solid bg; no white fill needed
-    logging: false,
-  });
+
+  // Temporarily lift overflow clipping so html2canvas sees the full width
+  const parent = el.parentElement;
+  const savedOverflow = parent?.style.overflowX ?? "";
+  if (parent) parent.style.overflowX = "visible";
+
+  try {
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    return await (html2canvas as any)(el, {
+      scale,
+      useCORS: true,
+      backgroundColor: null,   // ticket has its own solid bg; no white fill needed
+      logging: false,
+      width:       w,           // explicit px — don't let html2canvas guess from parent
+      height:      h,
+      windowWidth: Math.max(w + 120, window.innerWidth), // virtual viewport ≥ ticket
+    });
+  } finally {
+    if (parent) parent.style.overflowX = savedOverflow;
+  }
 }
 
 // ── Main page ─────────────────────────────────────────────────────────
@@ -98,10 +119,16 @@ export default function TicketDownloadPage({
       // JPEG instead of PNG: ticket has a solid dark background so no
       // transparency is lost, and file size drops from ~10 MB to ~200–400 KB.
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
-      const pw = 595; // A4 width in points
-      const ph = Math.round((canvas.height / canvas.width) * pw);
-      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: [pw, ph] });
-      pdf.addImage(imgData, "JPEG", 0, 0, pw, ph);
+      // Use the canvas's own dimensions as the PDF page so landscape tickets
+      // are never squashed into a portrait A4 page and nothing is cut off.
+      const cw = canvas.width;
+      const ch = canvas.height;
+      const pdf = new jsPDF({
+        orientation: cw > ch ? "landscape" : "portrait",
+        unit: "px",
+        format: [cw, ch],
+      });
+      pdf.addImage(imgData, "JPEG", 0, 0, cw, ch);
       pdf.save(`ticket-${ticketId}.pdf`);
     } catch (e) {
       console.error("PDF download failed:", e);

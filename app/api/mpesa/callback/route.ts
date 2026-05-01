@@ -28,7 +28,34 @@ import { prisma } from "@/lib/db";
 
 const ACCEPTED = NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
 
+// Safaricom production + sandbox callback IP ranges.
+// Source: Safaricom Daraja developer documentation.
+// In sandbox, callbacks may come from any IP — allowlist is only enforced in production.
+const SAFARICOM_IPS = new Set([
+  "196.201.214.200", "196.201.214.206", "196.201.213.114",
+  "196.201.214.207", "196.201.214.208", "196.201.213.44",
+  "196.201.212.127", "196.201.212.138", "196.201.212.129",
+  "196.201.212.136", "196.201.212.74",  "196.201.212.69",
+]);
+
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    ""
+  );
+}
+
 export async function POST(req: NextRequest) {
+  // In production, only accept callbacks from known Safaricom IPs
+  if (process.env.NODE_ENV === "production" && process.env.MPESA_ENV === "production") {
+    const clientIp = getClientIp(req);
+    if (!SAFARICOM_IPS.has(clientIp)) {
+      console.warn(`[mpesa/callback] Blocked unknown IP: ${clientIp}`);
+      return ACCEPTED; // Return 200 to avoid Safaricom retry loops, but do nothing
+    }
+  }
+
   let body: unknown;
   try { body = await req.json(); }
   catch { return ACCEPTED; }
