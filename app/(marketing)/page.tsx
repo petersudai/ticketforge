@@ -104,11 +104,11 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function SectionHeading({ children, sub }: { children: React.ReactNode; sub?: string }) {
   return (
-    <div className="text-center mb-16">
-      <h2 className="font-heading font-extrabold text-[36px] md:text-[44px] tracking-tight leading-[1.1] text-white mb-4">
+    <div className="text-center mb-12 md:mb-16">
+      <h2 className="font-heading font-extrabold text-[26px] sm:text-[32px] md:text-[44px] tracking-tight leading-[1.1] text-white mb-4">
         {children}
       </h2>
-      {sub && <p className="text-[16px] text-white/50 max-w-[520px] mx-auto leading-relaxed">{sub}</p>}
+      {sub && <p className="text-[14px] sm:text-[16px] text-white/50 max-w-[520px] mx-auto leading-relaxed">{sub}</p>}
     </div>
   );
 }
@@ -137,31 +137,31 @@ function Hero() {
         </div>
 
         {/* Headline */}
-        <h1 className="font-heading font-extrabold text-[52px] md:text-[72px] lg:text-[84px] tracking-[-0.03em] leading-[0.95] text-white mb-6"
+        <h1 className="font-heading font-extrabold text-[36px] sm:text-[52px] md:text-[72px] lg:text-[84px] tracking-[-0.03em] leading-[0.95] text-white mb-6"
           style={{ animation: "fadeInUp 0.6s 0.1s ease both" }}>
           Sell tickets.<br />
           <GradientText>Get paid instantly.</GradientText>
         </h1>
 
         {/* Sub */}
-        <p className="text-[18px] md:text-[20px] text-white/50 max-w-[600px] mx-auto leading-relaxed mb-10"
+        <p className="text-[15px] sm:text-[18px] md:text-[20px] text-white/50 max-w-[600px] mx-auto leading-relaxed mb-10"
           style={{ animation: "fadeInUp 0.6s 0.22s ease both" }}>
           The ticketing platform built for African events. M-Pesa payments, scannable QR tickets, and real-time check-in analytics — all in one place.
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14"
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10 sm:mb-14 w-full max-w-xs sm:max-w-none mx-auto"
           style={{ animation: "fadeInUp 0.6s 0.34s ease both" }}>
           <Link
             href="/demo"
-            className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-[15px] px-7 py-3.5 rounded-[12px] transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(108,92,231,0.3)]"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-[15px] px-7 py-3.5 rounded-[12px] transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(108,92,231,0.3)]"
           >
             <Play className="w-4 h-4 fill-white" />
             Try live demo
           </Link>
           <Link
             href="/auth/signup"
-            className="flex items-center gap-2 bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.1] text-white font-semibold text-[15px] px-7 py-3.5 rounded-[12px] transition-all duration-150"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.1] text-white font-semibold text-[15px] px-7 py-3.5 rounded-[12px] transition-all duration-150"
           >
             Start for free <ArrowRight className="w-4 h-4" />
           </Link>
@@ -203,8 +203,8 @@ function Hero() {
               </div>
             </div>
           </div>
-          {/* Dashboard mockup */}
-          <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          {/* Dashboard mockup — stat cards always visible; event table only on sm+ */}
+          <div className="p-3 sm:p-5 grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-4">
             {[
               { label: "Total tickets", value: "2,847", up: "+12%", color: "#a29cf4" },
               { label: "Revenue (KES)", value: "847,500", up: "+23%", color: "#55efc4" },
@@ -218,7 +218,8 @@ function Hero() {
               </div>
             ))}
           </div>
-          <div className="px-5 pb-5">
+          {/* Events table — hidden on mobile to avoid overflow; visible sm+ */}
+          <div className="hidden sm:block px-5 pb-5">
             <div className="rounded-xl overflow-hidden border border-white/[0.06]">
               <div className="grid grid-cols-6 px-4 py-2.5 bg-white/[0.03] border-b border-white/[0.05] text-[10px] text-white/30 uppercase tracking-wider font-heading">
                 {["Event", "Date", "Attendees", "Revenue", "Status", ""].map(h => <div key={h}>{h}</div>)}
@@ -337,7 +338,7 @@ const features = [
 
 function Features() {
   return (
-    <section id="features" className="py-28 px-6">
+    <section id="features" className="py-16 sm:py-24 md:py-28 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <SectionLabel>Everything you need</SectionLabel>
@@ -396,9 +397,9 @@ function HowItWorks() {
   ];
 
   return (
-    <section id="how-it-works" className="py-28 px-6 border-t border-white/[0.05]">
+    <section id="how-it-works" className="py-16 sm:py-24 md:py-28 px-4 sm:px-6 border-t border-white/[0.05]">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 md:mb-16">
           <SectionLabel>Simple by design</SectionLabel>
           <SectionHeading sub="Whether you're running an event or attending one, TicketForge makes it effortless.">
             How it <GradientText>works</GradientText>
@@ -407,7 +408,7 @@ function HowItWorks() {
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* For organisers */}
-          <div className="rounded-2xl p-7 border border-white/[0.08]" style={{ background: "rgba(108,92,231,0.05)" }}>
+          <div className="rounded-2xl p-5 sm:p-7 border border-white/[0.08]" style={{ background: "rgba(108,92,231,0.05)" }}>
             <div className="flex items-center gap-2 mb-8">
               <div className="w-7 h-7 rounded-lg bg-brand-500/20 flex items-center justify-center">
                 <Zap className="w-3.5 h-3.5 text-brand-400" />
@@ -435,7 +436,7 @@ function HowItWorks() {
           </div>
 
           {/* For attendees */}
-          <div className="rounded-2xl p-7 border border-white/[0.08]" style={{ background: "rgba(0,165,80,0.04)" }}>
+          <div className="rounded-2xl p-5 sm:p-7 border border-white/[0.08]" style={{ background: "rgba(0,165,80,0.04)" }}>
             <div className="flex items-center gap-2 mb-8">
               <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center">
                 <Ticket className="w-3.5 h-3.5 text-emerald-400" />
@@ -504,9 +505,9 @@ const plans = [
 
 function Pricing() {
   return (
-    <section id="pricing" className="py-28 px-6 border-t border-white/[0.05]">
+    <section id="pricing" className="py-16 sm:py-24 md:py-28 px-4 sm:px-6 border-t border-white/[0.05]">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 md:mb-16">
           <SectionLabel>Simple pricing</SectionLabel>
           <SectionHeading sub="Start free. Scale as you grow. No hidden fees, no surprises.">
             Pricing that <GradientText>makes sense</GradientText>
@@ -622,9 +623,9 @@ const testimonials = [
 
 function Testimonials() {
   return (
-    <section className="py-28 px-6 border-t border-white/[0.05]">
+    <section className="py-16 sm:py-24 md:py-28 px-4 sm:px-6 border-t border-white/[0.05]">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 md:mb-16">
           <SectionLabel>Loved by organisers</SectionLabel>
           <SectionHeading sub="Join hundreds of event organisers across Kenya who trust TicketForge to run their events smoothly.">
             What organisers <GradientText>say</GradientText>
@@ -664,15 +665,15 @@ function Testimonials() {
 
 function Benefits() {
   return (
-    <section className="py-28 px-6 border-t border-white/[0.05]">
+    <section className="py-16 sm:py-24 md:py-28 px-4 sm:px-6 border-t border-white/[0.05]">
       <div className="max-w-6xl mx-auto">
         <div className="grid md:grid-cols-2 gap-6">
           {/* Organiser benefits */}
-          <div className="rounded-2xl p-8 border border-brand-500/15" style={{ background: "rgba(108,92,231,0.04)" }}>
+          <div className="rounded-2xl p-6 sm:p-8 border border-brand-500/15" style={{ background: "rgba(108,92,231,0.04)" }}>
             <div className="w-10 h-10 rounded-xl bg-brand-500/15 flex items-center justify-center mb-6">
               <Zap className="w-5 h-5 text-brand-400" />
             </div>
-            <h3 className="font-heading font-extrabold text-[26px] text-white mb-3">For organisers</h3>
+            <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] text-white mb-3">For organisers</h3>
             <p className="text-[14px] text-white/45 mb-8 leading-relaxed">Everything you need to run a professional event — from setup to settlement.</p>
             <div className="space-y-4">
               {[
@@ -697,11 +698,11 @@ function Benefits() {
           </div>
 
           {/* Attendee benefits */}
-          <div className="rounded-2xl p-8 border border-emerald-500/15" style={{ background: "rgba(0,165,80,0.04)" }}>
+          <div className="rounded-2xl p-6 sm:p-8 border border-emerald-500/15" style={{ background: "rgba(0,165,80,0.04)" }}>
             <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center mb-6">
               <Ticket className="w-5 h-5 text-emerald-400" />
             </div>
-            <h3 className="font-heading font-extrabold text-[26px] text-white mb-3">For attendees</h3>
+            <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] text-white mb-3">For attendees</h3>
             <p className="text-[14px] text-white/45 mb-8 leading-relaxed">A smooth, fast, trustworthy way to get your ticket and enjoy the event.</p>
             <div className="space-y-4">
               {[
@@ -734,9 +735,9 @@ function Benefits() {
 
 function Stats() {
   return (
-    <section className="py-20 px-6 border-t border-white/[0.05]" style={{ background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, transparent 60%)" }}>
+    <section className="py-14 sm:py-20 px-4 sm:px-6 border-t border-white/[0.05]" style={{ background: "linear-gradient(135deg, rgba(108,92,231,0.05) 0%, transparent 60%)" }}>
       <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
           {[
             { value: "50,000+", label: "Tickets issued", color: "#a29cf4" },
             { value: "KES 12M+", label: "Processed via M-Pesa", color: "#55efc4" },
@@ -744,8 +745,8 @@ function Stats() {
             { value: "99.9%", label: "Uptime SLA", color: "#fdcb6e" },
           ].map((s, i) => (
             <Reveal key={s.label} delay={i * 90}>
-              <div className="font-heading font-extrabold text-[38px] md:text-[44px] tracking-tight mb-2" style={{ color: s.color }}>{s.value}</div>
-              <div className="text-[13px] text-white/35">{s.label}</div>
+              <div className="font-heading font-extrabold text-[26px] sm:text-[34px] md:text-[44px] tracking-tight mb-1.5 break-words" style={{ color: s.color }}>{s.value}</div>
+              <div className="text-[11px] sm:text-[13px] text-white/35 leading-snug">{s.label}</div>
             </Reveal>
           ))}
         </div>
@@ -771,9 +772,9 @@ function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="py-28 px-6 border-t border-white/[0.05]">
+    <section id="faq" className="py-16 sm:py-24 md:py-28 px-4 sm:px-6 border-t border-white/[0.05]">
       <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 md:mb-16">
           <SectionLabel>FAQ</SectionLabel>
           <SectionHeading sub="Everything you need to know before you start.">
             Common <GradientText>questions</GradientText>
@@ -814,31 +815,31 @@ function FAQ() {
 
 function FinalCTA() {
   return (
-    <section className="py-28 px-6 border-t border-white/[0.05]">
+    <section className="py-16 sm:py-24 md:py-28 px-4 sm:px-6 border-t border-white/[0.05]">
       <div className="max-w-3xl mx-auto text-center">
-        <div className="relative rounded-3xl overflow-hidden p-12" style={{ background: "linear-gradient(135deg, rgba(108,92,231,0.2) 0%, rgba(72,52,212,0.15) 100%)", border: "1px solid rgba(108,92,231,0.25)" }}>
+        <div className="relative rounded-3xl overflow-hidden p-6 sm:p-10 md:p-12" style={{ background: "linear-gradient(135deg, rgba(108,92,231,0.2) 0%, rgba(72,52,212,0.15) 100%)", border: "1px solid rgba(108,92,231,0.25)" }}>
           <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(108,92,231,0.3) 0%, transparent 70%)" }} />
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 bg-brand-500/20 border border-brand-500/30 rounded-full px-4 py-1.5 text-[12px] text-brand-300 font-semibold mb-6">
               <Sparkles className="w-3 h-3" />
               Free to start · No credit card
             </div>
-            <h2 className="font-heading font-extrabold text-[38px] md:text-[48px] tracking-tight leading-[1.05] text-white mb-4">
+            <h2 className="font-heading font-extrabold text-[28px] sm:text-[36px] md:text-[48px] tracking-tight leading-[1.05] text-white mb-4">
               Ready to sell your<br /><GradientText>first ticket?</GradientText>
             </h2>
-            <p className="text-[16px] text-white/45 mb-10 leading-relaxed">
+            <p className="text-[14px] sm:text-[16px] text-white/45 mb-8 sm:mb-10 leading-relaxed">
               Join hundreds of Kenyan event organisers. Set up your event in minutes, share your link, and start collecting M-Pesa payments.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/demo"
-                className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-[15px] px-8 py-3.5 rounded-[12px] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(108,92,231,0.35)]"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-[15px] px-8 py-3.5 rounded-[12px] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(108,92,231,0.35)]"
               >
                 Try live demo <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="/marketplace"
-                className="flex items-center gap-2 bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.12] text-white font-semibold text-[15px] px-8 py-3.5 rounded-[12px] transition-all"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.12] text-white font-semibold text-[15px] px-8 py-3.5 rounded-[12px] transition-all"
               >
                 <Globe className="w-4 h-4 text-white/50" />
                 Browse events
