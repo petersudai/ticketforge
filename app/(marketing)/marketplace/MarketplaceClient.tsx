@@ -302,7 +302,7 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
       <MarketingNav />
 
       {/* Hero */}
-      <section className="relative pt-[96px] pb-12 px-6 overflow-hidden">
+      <section className="relative pt-[96px] pb-10 px-4 sm:px-6 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: "radial-gradient(ellipse at 50% -20%, rgba(108,92,231,0.15) 0%, transparent 60%)" }} />
         <div className="max-w-7xl mx-auto relative z-10">
@@ -311,7 +311,7 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
               <Sparkles className="w-3 h-3" />
               {`${upcomingCount} upcoming event${upcomingCount !== 1 ? "s" : ""}`}
             </div>
-            <h1 className="font-heading font-extrabold text-[44px] md:text-[60px] tracking-[-0.03em] leading-[1.05] text-white mb-4">
+            <h1 className="font-heading font-extrabold text-[28px] sm:text-[40px] md:text-[60px] tracking-[-0.03em] leading-[1.05] text-white mb-4">
               Discover &amp; book<br />
               <span style={{
                 background: "linear-gradient(135deg, #a29cf4 0%, #6C5CE7 100%)",
@@ -373,7 +373,7 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
       </section>
 
       {/* Results */}
-      <section className="px-6 pb-24">
+      <section className="px-4 sm:px-6 pb-24">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <span className="text-[13px] text-white/35">
@@ -401,22 +401,22 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
       </section>
 
       {/* Organiser CTA */}
-      <section className="px-6 pb-20">
+      <section className="px-4 sm:px-6 pb-20">
         <div className="max-w-4xl mx-auto">
           <div
-            className="rounded-2xl p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6"
+            className="rounded-2xl p-6 sm:p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left"
             style={{
               background: "linear-gradient(135deg, rgba(108,92,231,0.12) 0%, rgba(72,52,212,0.08) 100%)",
               border: "1px solid rgba(108,92,231,0.2)",
             }}
           >
             <div>
-              <h3 className="font-heading font-extrabold text-[24px] text-white mb-2">Hosting an event?</h3>
+              <h3 className="font-heading font-extrabold text-[20px] sm:text-[24px] text-white mb-2">Hosting an event?</h3>
               <p className="text-[14px] text-white/45">Create your event in minutes and start selling tickets with M-Pesa today.</p>
             </div>
             <Link
               href="/auth/signup"
-              className="shrink-0 flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-[14px] px-6 py-3 rounded-[11px] transition-all hover:scale-[1.02] whitespace-nowrap"
+              className="w-full md:w-auto shrink-0 flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-[14px] px-6 py-3 rounded-[11px] transition-all hover:scale-[1.02] whitespace-nowrap"
             >
               Start selling tickets <ArrowRight className="w-4 h-4" />
             </Link>

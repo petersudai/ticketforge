@@ -347,7 +347,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
 
       {/* ── Hero ────────────────────────────────────────────────── */}
       <div style={{
-        position: "relative", padding: "5rem 2rem 3.5rem", overflow: "hidden",
+        position: "relative", padding: "clamp(1.5rem, 5vw, 5rem) clamp(1rem, 4vw, 2rem) 3rem", overflow: "hidden",
         background: event.bgImage
           ? `linear-gradient(to bottom, rgba(6,6,14,0.3), #06060e), url(${event.bgImage}) center/cover`
           : `linear-gradient(135deg, ${event.accent}18, ${event.accent}06)`,
@@ -375,7 +375,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
       </div>
 
       {/* ── Body ────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 2rem 4rem" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 clamp(1rem, 4vw, 2rem) 4rem" }}>
 
         <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
           Select a ticket tier
@@ -521,7 +521,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
               No account required — your ticket will be emailed to you instantly after registration.
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div className="reg-form-grid" style={{ marginBottom: 12 }}>
               <div>
                 <label style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6 }}>Full name *</label>
                 <input style={inputStyle} type="text" placeholder="Your full name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
@@ -627,6 +627,8 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         input:focus { border-color: rgba(108,92,231,0.6) !important; box-shadow: 0 0 0 3px rgba(108,92,231,0.12); }
+        .reg-form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        @media (min-width: 500px) { .reg-form-grid { grid-template-columns: 1fr 1fr; } }
       `}</style>
     </div>
   );

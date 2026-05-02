@@ -4,8 +4,8 @@ import { Zap } from "lucide-react";
 export function MarketingFooter() {
   return (
     <footer className="border-t border-white/[0.06] bg-[#06060e]">
-      <div className="max-w-7xl mx-auto px-6 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 sm:gap-10 mb-10 sm:mb-12">
           {/* Brand */}
           <div className="col-span-2">
             <div className="flex items-center gap-2.5 mb-4">
