@@ -117,7 +117,7 @@ export function onAuthStateChange(
 ) {
   const sb = getSupabaseClient();
   if (!sb) return { data: { subscription: { unsubscribe: () => {} } } };
-  return sb.auth.onAuthStateChange((_event: AuthChangeEvent, session) => {
+  return sb.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
     callback(session?.user ?? null, session);
   });
 }
