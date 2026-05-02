@@ -28,26 +28,37 @@ begin
     v_role := 'organiser';
   end if;
 
-  insert into public."Profile" (
-    "supabaseUserId",
-    role,
-    "fullName",
-    "avatarUrl",
-    "createdAt",
-    "updatedAt"
-  ) values (
-    new.id,
-    v_role,
-    coalesce(
-      new.raw_user_meta_data->>'full_name',
-      new.raw_user_meta_data->>'name',
-      ''
-    ),
-    new.raw_user_meta_data->>'avatar_url',
-    now(),
-    now()
-  )
-  on conflict ("supabaseUserId") do nothing;
+  -- Wrapped in its own sub-block so any insert failure is logged but never
+  -- blocks auth.users creation. "Database error saving new user" was caused
+  -- by the id column having no database-level DEFAULT (Prisma generates cuid()
+  -- in application code, not in Postgres). We use gen_random_uuid() here.
+  begin
+    insert into public."Profile" (
+      id,
+      "supabaseUserId",
+      role,
+      "fullName",
+      "avatarUrl",
+      "createdAt",
+      "updatedAt"
+    ) values (
+      gen_random_uuid()::text,
+      new.id,
+      v_role,
+      coalesce(
+        new.raw_user_meta_data->>'full_name',
+        new.raw_user_meta_data->>'name',
+        ''
+      ),
+      new.raw_user_meta_data->>'avatar_url',
+      now(),
+      now()
+    )
+    on conflict ("supabaseUserId") do nothing;
+  exception when others then
+    -- Log the error but never let a Profile insert failure block signup
+    raise warning 'handle_new_user: Profile insert failed for user %: %', new.id, sqlerrm;
+  end;
 
   return new;
 end;

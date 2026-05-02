@@ -1,5 +1,10 @@
 /**
- * middleware.ts — Supabase Auth + RBAC route protection
+ * proxy.ts — Supabase Auth + RBAC route protection
+ *
+ * In Next.js 16, `middleware.ts` was renamed to `proxy.ts` and the exported
+ * function changed from `middleware` to `proxy`. This file replaces the old
+ * middleware.ts. See: node_modules/next/dist/docs/01-app/03-api-reference/
+ *                      03-file-conventions/proxy.md
  *
  * Routing rules:
  *   Public routes          → always pass through, no auth check
@@ -9,7 +14,7 @@
  *   Wrong role             → redirect to defaultRedirect(role)
  *
  * Cookie refresh: Supabase access tokens expire every hour.
- * Middleware MUST write refreshed cookies back onto the response.
+ * Proxy MUST write refreshed cookies back onto the response.
  *
  * getUser() vs getSession():
  *   Always use getUser() — it validates the JWT with Supabase every time.
@@ -35,7 +40,7 @@ const PROTECTED = [
 // Routes that need only a valid session (no role check)
 const SESSION_ONLY = ["/auth/invite"];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const isProtected   = PROTECTED.some(p => pathname.startsWith(p));
@@ -52,7 +57,7 @@ export async function middleware(req: NextRequest) {
         { status: 503 }
       );
     }
-    console.warn("[middleware] Supabase not configured — skipping auth check (dev only)");
+    console.warn("[proxy] Supabase not configured — skipping auth check (dev only)");
     return NextResponse.next();
   }
 
@@ -80,7 +85,7 @@ export async function middleware(req: NextRequest) {
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (error) {
-    console.warn("[middleware] Auth error:", error.message);
+    console.warn("[proxy] Auth error:", error.message);
   }
 
   // No valid session → login
