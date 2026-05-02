@@ -18,9 +18,19 @@ const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 export const supabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON);
 
+// ── Singleton browser client ──────────────────────────────────────────
+// MUST be a module-level singleton. Supabase refresh tokens are single-use:
+// if two separate client instances both try to refresh, the second one gets
+// "Invalid Refresh Token: Refresh Token Not Found" because the first already
+// consumed it. One instance per browser session eliminates this race entirely.
+let _client: ReturnType<typeof createBrowserClient> | null = null;
+
 export function getSupabaseClient() {
   if (!supabaseConfigured) return null;
-  return createBrowserClient(SUPABASE_URL, SUPABASE_ANON);
+  if (!_client) {
+    _client = createBrowserClient(SUPABASE_URL, SUPABASE_ANON);
+  }
+  return _client;
 }
 
 // ── Sign up (organiser only) ──────────────────────────────────────────

@@ -16,7 +16,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { User } from "@supabase/supabase-js";
-import { getUser } from "@/lib/supabase";
+import { getUser, getSupabaseClient } from "@/lib/supabase";
 import type { Role } from "@/lib/roles";
 
 interface AuthState {
@@ -83,6 +83,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => { fetchUser(); }, [fetchUser]);
+
+  // If another tab signs out or a token refresh fails (e.g. two tabs competing
+  // on the same single-use refresh token), re-fetch the user so the UI stays
+  // in sync. On SIGNED_OUT, also redirect away from protected pages.
+  useEffect(() => {
+    const sb = getSupabaseClient();
+    if (!sb) return;
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event: string) => {
+      if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
+        fetchUser();
+      }
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setRole(null);
+        if (typeof window !== "undefined" && window.location.pathname !== "/auth/login") {
+          window.location.href = "/auth/login";
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, role, loading, refresh: fetchUser }}>
