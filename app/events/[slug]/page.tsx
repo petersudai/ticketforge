@@ -269,9 +269,10 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
   };
 
   const handleRegister = async () => {
-    if (!form.name.trim())  { setPayMsg("Please enter your full name"); return; }
-    if (!form.email.trim()) { setPayMsg("Please enter your email address"); return; }
-    if (!isFree && !form.phone.trim()) { setPayMsg("Please enter your M-Pesa phone number"); return; }
+    if (!form.name.trim())  { setPayMsg("Please enter your full name."); return; }
+    if (!form.email.trim()) { setPayMsg("Please enter your email address — your ticket will be sent here."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) { setPayMsg("Please enter a valid email address."); return; }
+    if (!isFree && !form.phone.trim()) { setPayMsg("Please enter your M-Pesa phone number."); return; }
     if (eventSoldOut) { setPayMsg("This event is sold out"); return; }
     if (tier?.soldOut) { setPayMsg("This ticket tier is sold out. Please select another."); return; }
     if (tier?.saleWindowStatus === "not_started") { setPayMsg("Sales for this tier haven't started yet."); return; }
@@ -517,7 +518,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
 
             {/* No account required notice */}
             <div style={{ background: "rgba(108,92,231,0.06)", border: "1px solid rgba(108,92,231,0.15)", borderRadius: 10, padding: "8px 12px", marginBottom: 14, fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
-              No account required — provide your email and we'll deliver your ticket instantly.
+              No account required — your ticket will be emailed to you instantly after registration.
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
@@ -526,8 +527,8 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
                 <input style={inputStyle} type="text" placeholder="Your full name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6 }}>Email address *</label>
-                <input style={inputStyle} type="email" placeholder="your@email.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                <label style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6 }}>Email address * <span style={{ color: "rgba(255,255,255,0.25)", fontWeight: 400 }}>(ticket delivered here)</span></label>
+                <input style={inputStyle} type="email" placeholder="your@email.com" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
               </div>
               <div>
                 <label style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6 }}>

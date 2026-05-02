@@ -155,9 +155,10 @@ export default function OrderConfirmationPage({
 }) {
   const { orderId } = use(params);
 
-  const [order,    setOrder]    = useState<Order | null>(null);
-  const [loading,  setLoading]  = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [order,      setOrder]      = useState<Order | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [notFound,   setNotFound]   = useState(false);
+  const [emailSent,  setEmailSent]  = useState(false);
 
   useEffect(() => {
     fetch(`/api/order/${orderId}`)
@@ -165,9 +166,43 @@ export default function OrderConfirmationPage({
         if (!r.ok) { setNotFound(true); return null; }
         return r.json();
       })
-      .then(data => { if (data) setOrder(data); })
+      .then(data => {
+        if (!data) return;
+        setOrder(data);
+
+        // ── Send confirmation email on first load ──────────────────────
+        // Use the primary attendee (first in the list, slotIndex=0).
+        // Fire-and-forget — a failed email never breaks the confirmation page.
+        const primaryAttendee = (data.attendees as OrderAttendee[])[0];
+        if (primaryAttendee?.email) {
+          const appUrl     = window.location.origin;
+          const downloadUrl = `${appUrl}/ticket/${primaryAttendee.ticketId}`;
+          fetch("/api/tickets/send-email", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ticketId:   primaryAttendee.ticketId,
+              toEmail:    primaryAttendee.email,
+              toName:     primaryAttendee.name,
+              eventName:  data.event.name,
+              eventDate:  data.event.date  ?? "",
+              eventTime:  data.event.time  ?? "",
+              eventVenue: data.event.venue ?? "",
+              organizer:  data.event.organizer ?? "",
+              tierName:   data.tier.name,
+              pricePaid:  data.order?.totalPaid ?? primaryAttendee.pricePaid ?? 0,
+              currency:   data.event.currency ?? "KES",
+              accent:     data.event.accent   ?? "#6C5CE7",
+              downloadUrl,
+            }),
+          })
+            .then(() => setEmailSent(true))
+            .catch(() => {}); // non-fatal — buyer can use /resend-ticket
+        }
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
   // ── Loading ────────────────────────────────────────────────────────
@@ -343,11 +378,20 @@ export default function OrderConfirmationPage({
           className="rounded-xl px-4 py-3 mb-5 text-center"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}
         >
-          <p className="text-[11px] text-white/25 leading-relaxed">
-            Confirmation links have been sent to{" "}
-            <span className="text-white/45">{attendees[0]?.email || "your email"}</span>.
-            <br />No account required — bookmark this page or save the email.
-          </p>
+          {attendees[0]?.email ? (
+            <p className="text-[11px] text-white/25 leading-relaxed">
+              {emailSent ? "✓ Confirmation sent to " : "Sending confirmation to "}
+              <span className="text-white/45">{attendees[0].email}</span>.
+              <br />Can&apos;t find it?{" "}
+              <Link href={`/resend-ticket?ticketId=${attendees[0].ticketId}`} className="text-brand-400 hover:text-brand-300">
+                Resend email →
+              </Link>
+            </p>
+          ) : (
+            <p className="text-[11px] text-white/25 leading-relaxed">
+              Bookmark this page — it&apos;s your permanent ticket link.
+            </p>
+          )}
         </div>
 
         {/* ── Event link ─────────────────────────────────────────────── */}

@@ -31,12 +31,6 @@ export async function POST(req: NextRequest) {
 
   const { ticketId, email } = parsed.data;
 
-  // DB always required
-if (false) {
-    console.log(`[resend] DEV: would resend ticket ${ticketId}`);
-    return NextResponse.json({ ok: true, message: "Ticket resent (dev mode)" });
-  }
-
   const attendee = await (prisma as any).attendee.findUnique({
     where:   { ticketId },
     include: { event: { include: { org: true, tiers: true } } },

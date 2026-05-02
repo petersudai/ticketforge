@@ -79,7 +79,7 @@ export const UpdateEventSchema = CreateEventSchema.partial().omit({ orgId: true,
 
 export const CreateAttendeeSchema = z.object({
   name:      z.string().min(2, "Name is too short").max(100).trim(),
-  email:     z.string().email("Invalid email").optional().nullable().or(z.literal("")),
+  email:     z.string().email("Invalid email address"),
   phone:     z.string().max(20).optional().nullable(),
   seat:      z.string().max(20).optional().nullable(),
   tier:      z.string().max(50).optional().nullable(),
@@ -126,7 +126,7 @@ export const MpesaInitSchema = z.object({
   eventId:       z.string().min(1),
   eventName:     z.string().min(1).max(200),
   attendeeName:  z.string().min(1).max(100),
-  attendeeEmail: z.string().email().optional().nullable(),
+  attendeeEmail: z.string().email("A valid email address is required to receive your ticket"),
 });
 
 // ── Helper: parse and return 400 on failure ───────────────────────────
