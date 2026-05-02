@@ -10,7 +10,7 @@
  */
 
 import { createBrowserClient } from "@supabase/ssr";
-import type { User, Session } from "@supabase/supabase-js";
+import type { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import type { Role } from "@/lib/roles";
 
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? "";
@@ -117,7 +117,7 @@ export function onAuthStateChange(
 ) {
   const sb = getSupabaseClient();
   if (!sb) return { data: { subscription: { unsubscribe: () => {} } } };
-  return sb.auth.onAuthStateChange((_event, session) => {
+  return sb.auth.onAuthStateChange((_event: AuthChangeEvent, session) => {
     callback(session?.user ?? null, session);
   });
 }

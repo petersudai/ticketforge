@@ -15,7 +15,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import type { User } from "@supabase/supabase-js";
+import type { User, AuthChangeEvent } from "@supabase/supabase-js";
 import { getUser, getSupabaseClient } from "@/lib/supabase";
 import type { Role } from "@/lib/roles";
 
@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const sb = getSupabaseClient();
     if (!sb) return;
-    const { data: { subscription } } = sb.auth.onAuthStateChange((event: string) => {
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event: AuthChangeEvent) => {
       if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
         fetchUser();
       }
