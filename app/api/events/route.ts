@@ -72,6 +72,10 @@ export async function GET(req: NextRequest) {
     const events = await (db as any).event.findMany({
       where,
       include: {
+        // Org info is included so the super-admin /events view can group
+        // events by organisation. For regular organisers this is harmless
+        // duplication — every event belongs to their single org.
+        org:       { select: { id: true, name: true, slug: true } },
         tiers:     { orderBy: { sortOrder: "asc" } },
         attendees: {
           select: {

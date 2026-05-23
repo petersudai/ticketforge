@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useEvents } from "@/lib/hooks/useEvents";
 import { useStore } from "@/store/useStore";
+import { useAuth } from "@/lib/auth-context";
+import { isSuperAdmin } from "@/lib/roles";
 import { Card, CardTitle, CardHeader, Button, EmptyState } from "@/components/ui";
 import { formatDate } from "@/lib/utils";
-import { Plus, CalendarDays, ArrowRight } from "lucide-react";
+import { Plus, CalendarDays, ArrowRight, ShieldCheck } from "lucide-react";
 import { OnboardingBanners } from "@/components/dashboard/OnboardingBanners";
 import { TipBubble } from "@/components/ui/TipBubble";
 
@@ -65,6 +67,8 @@ function LoadingSkeleton() {
 export default function DashboardPage() {
   const { events, loading, error } = useEvents();
   const { platformFee } = useStore();
+  const { role } = useAuth();
+  const superAdmin = isSuperAdmin(role);
 
   if (loading) return <LoadingSkeleton />;
 
@@ -121,6 +125,43 @@ export default function DashboardPage() {
       />
 
       <OnboardingBanners />
+
+      {/* Super-admin context banner — only shown when role is super_admin.
+          Makes it explicit that the stat cards below aggregate every event
+          across every organisation, not just the admin's own. */}
+      {superAdmin && (
+        <div
+          className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
+          style={{
+            background: "rgba(225,112,85,0.08)",
+            border:     "1px solid rgba(225,112,85,0.25)",
+          }}
+        >
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: "rgba(225,112,85,0.18)", color: "#e17055" }}
+          >
+            <ShieldCheck className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0 text-[12px]">
+            <span className="font-semibold text-[#e17055]">Super Admin view</span>
+            <span className="text-white/55">
+              {" "}— numbers below cover <strong className="text-white/80">all organisations</strong> on the platform.
+            </span>
+          </div>
+          <Link
+            href="/events"
+            className="text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors shrink-0"
+            style={{
+              background: "rgba(225,112,85,0.15)",
+              color:      "#e17055",
+              border:     "1px solid rgba(225,112,85,0.25)",
+            }}
+          >
+            Browse all events →
+          </Link>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-start justify-between">
