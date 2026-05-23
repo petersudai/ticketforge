@@ -597,7 +597,7 @@ export default function DemoPage() {
           <div>
             <h1 className="font-heading font-bold text-[20px] text-white">{meta.label}</h1>
             <div className="text-[12px] text-white/35">
-              {step + 1} / {STEPS.length} · Demo data — fully interactive
+              {step + 1} / {STEPS.length} · Live preview — click anything
             </div>
           </div>
         </div>
