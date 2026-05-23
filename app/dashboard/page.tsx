@@ -7,6 +7,7 @@ import { Card, CardTitle, CardHeader, Button, EmptyState } from "@/components/ui
 import { formatDate } from "@/lib/utils";
 import { Plus, CalendarDays, ArrowRight } from "lucide-react";
 import { OnboardingBanners } from "@/components/dashboard/OnboardingBanners";
+import { TipBubble } from "@/components/ui/TipBubble";
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -112,6 +113,13 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
+      {/* Welcome explainer — visible until dismissed, persisted per-user */}
+      <TipBubble
+        id="dashboard-welcome"
+        title="Welcome to your dashboard"
+        body="This is your home base. The cards below show live ticket sales, revenue, and check-in activity across all your events. Click any event in the table to view or edit it."
+      />
+
       <OnboardingBanners />
 
       {/* Header */}

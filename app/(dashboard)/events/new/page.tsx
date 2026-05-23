@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, Button, Input, Select, Textarea, Field } from "@/components/ui";
+import { TipBubble } from "@/components/ui/TipBubble";
 import { slugify, formatDate } from "@/lib/utils";
 import { Plus, Trash2, Upload, Save, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tier } from "@/store/useStore";
@@ -143,6 +144,10 @@ export default function NewEventPage() {
   const [bgImage, setBgImage] = useState<string | null>(null);
   const [tiers,   setTiers]   = useState<any[]>([newTier(TIER_PRESETS[1])]);
   const [errors,  setErrors]  = useState<string[]>([]);
+  // Tracks whether the user has manually typed in the slug field.
+  // While false, the slug auto-follows the event name. Once true, we stop
+  // touching it — the user has taken ownership of the slug value.
+  const [slugTouched, setSlugTouched] = useState(false);
   const [form, setForm] = useState({
     name: "", date: "", time: "", endTime: "", endDate: "", venue: "", organizer: "",
     category: CATEGORIES[0], capacity: "", currency: "KES",
@@ -150,12 +155,27 @@ export default function NewEventPage() {
     mpesaSc: "",
   });
 
+  // Generic field setter. Two pieces of "smart" behaviour:
+  //   1. Editing the event name keeps the slug in sync (slugified name)
+  //      until the user manually types in the slug field. This is the
+  //      common UX for slug fields — track until overridden.
+  //   2. Editing the slug field itself sets slugTouched = true so future
+  //      name changes leave the slug alone.
   const set = (key: string, val: string) =>
-    setForm(f => ({
-      ...f,
-      [key]: val,
-      ...(key === "name" && !f.slug ? { slug: slugify(val) } : {}),
-    }));
+    setForm(f => {
+      const next: typeof f = { ...f, [key]: val };
+      if (key === "name" && !slugTouched) {
+        next.slug = slugify(val);
+      }
+      return next;
+    });
+
+  // Dedicated handler for the slug field so we can flag "touched" once
+  // the user actually types something different from the auto value.
+  const setSlug = (val: string) => {
+    setSlugTouched(true);
+    setForm(f => ({ ...f, slug: val }));
+  };
 
   const handleBg = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -278,6 +298,15 @@ export default function NewEventPage() {
         </div>
       </div>
 
+      {/* Welcome explainer — visible until dismissed, persisted per-user */}
+      <div className="mb-4">
+        <TipBubble
+          id="event-form-welcome"
+          title="Setting up an event"
+          body="Fill in the details below. Fields marked with * are required. The URL slug below auto-fills from the event name — you can edit it yourself any time. Everything can be changed later from your dashboard."
+        />
+      </div>
+
       {/* Validation errors */}
       {errors.length > 0 && (
         <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/8 px-4 py-3">
@@ -325,7 +354,7 @@ export default function NewEventPage() {
                   <option value="TZS">TZS — Tanzanian Shilling</option>
                 </Select>
               </Field>
-              <Field label="Public URL slug"><Input placeholder="jazz-night-2025" value={form.slug} onChange={e => set("slug", e.target.value)} /></Field>
+              <Field label="Public URL slug"><Input placeholder="jazz-night-2025" value={form.slug} onChange={e => setSlug(e.target.value)} /></Field>
             </div>
             <Field label="Description">
               <Textarea placeholder="Shown on the public event page..." value={form.description} onChange={e => set("description", e.target.value)} />
