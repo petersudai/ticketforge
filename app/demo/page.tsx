@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useDemoStore } from "@/store/useDemoStore";
 import { getDemoStats } from "@/store/demoData";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatCompact } from "@/lib/utils";
 import {
   Zap, ArrowRight, ArrowLeft, CheckCircle2, QrCode,
   Ticket, TrendingUp, Users, Calendar, MapPin, X,
@@ -42,7 +42,9 @@ function StepDashboard() {
         {[
           { label: "Events", value: events.length, color: "#a29cf4" },
           { label: "Total tickets", value: stats.totalTickets.toLocaleString(), color: "#74b9ff" },
-          { label: "Revenue (KES)", value: Math.round(stats.totalRevenue / 1000) + "K", color: "#55efc4" },
+          // formatCompact gives proper M-bucket for revenues over 1M
+          // (e.g. 1,435,000 → "1.4M") instead of the lazy "1435K" we had.
+          { label: "Revenue (KES)", value: formatCompact(stats.totalRevenue), color: "#55efc4" },
           { label: "Check-in rate", value: `${stats.checkinRate}%`, color: "#fdcb6e" },
         ].map(s => (
           <div key={s.label} className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>

@@ -6,18 +6,12 @@ import { useStore } from "@/store/useStore";
 import { useAuth } from "@/lib/auth-context";
 import { isSuperAdmin } from "@/lib/roles";
 import { Card, CardTitle, CardHeader, Button, EmptyState } from "@/components/ui";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatCompact } from "@/lib/utils";
 import { Plus, CalendarDays, ArrowRight, ShieldCheck } from "lucide-react";
 import { OnboardingBanners } from "@/components/dashboard/OnboardingBanners";
 import { TipBubble } from "@/components/ui/TipBubble";
 
 // ── Helpers ───────────────────────────────────────────────────────────
-
-function fmtKES(n: number) {
-  if (n >= 1_000_000) return `KES ${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `KES ${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`;
-  return `KES ${Math.round(n).toLocaleString()}`;
-}
 
 /** Active = published & date is today or future; Past = date gone; Draft = unpublished */
 function eventStatus(event: any): "Active" | "Past" | "Draft" {
@@ -188,9 +182,8 @@ export default function DashboardPage() {
         />
         <StatCard
           label="Revenue (KES)"
-          value={grossRevenue >= 1000
-            ? `${(grossRevenue / 1000).toFixed(grossRevenue >= 10_000 ? 0 : 1)}K`
-            : Math.round(grossRevenue).toLocaleString()}
+          // Compact format: 50K, 1.4M, 12M — never the broken "1435K".
+          value={formatCompact(grossRevenue)}
           sub={`KES ${Math.round(netRevenue).toLocaleString()} net`}
           color="#55efc4"
         />
@@ -202,7 +195,7 @@ export default function DashboardPage() {
         />
         <StatCard
           label="Pending pay"
-          value={fmtKES(pendingRevenue)}
+          value={formatCompact(pendingRevenue, "KES")}
           sub={`${pendingAttendees.length} unpaid`}
           color="#fdcb6e"
         />
