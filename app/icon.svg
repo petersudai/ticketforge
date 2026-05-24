@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="TicketForge">
+  <!--
+    TicketForge favicon — "TicketBolt"
+    ──────────────────────────────────
+    A purple gradient rounded-square with a bold, softly-rounded lightning
+    bolt. Matches the in-app brand mark (purple square + lightning) used in
+    the Nav, Footer, and event pages.
+
+    Design notes:
+      • The background gradient mirrors the GradientText component used on
+        the landing page (a29cf4 → 6C5CE7 → 4834d4).
+      • The bolt is hand-drawn, NOT lifted from Lucide — it's bolder, fills
+        more of the canvas, and uses round line-joins so its points have
+        a softened character that distinguishes it from generic startup
+        lightning icons.
+      • Subtle drop shadow on the bolt adds depth at larger sizes (192+
+        for app shortcuts / OG fallbacks). Invisible at 16x16, where the
+        silhouette is what matters.
+
+    Next.js 16 picks this file up automatically via the icon.svg
+    file convention. See node_modules/next/dist/docs/01-app/03-api-reference/
+      03-file-conventions/01-metadata/app-icons.md
+  -->
+  <defs>
+    <linearGradient id="tf-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#a29cf4"/>
+      <stop offset="50%"  stop-color="#6C5CE7"/>
+      <stop offset="100%" stop-color="#4834d4"/>
+    </linearGradient>
+
+    <!-- Soft drop shadow on the bolt for depth at larger sizes. -->
+    <filter id="tf-bolt-shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="3"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.28"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Purple gradient rounded-square background -->
+  <rect width="256" height="256" rx="56" fill="url(#tf-bg)"/>
+
+  <!--
+    Lightning bolt — drawn clockwise from the top apex:
+      (140, 24)  top apex, slightly right of center for forward lean
+      (44, 140)  outer-left of upper fork
+      (124, 140) inner-right notch
+      (110, 232) bottom apex, slightly left of center
+      (212, 116) outer-right of lower fork (going up)
+      (132, 116) inner-left notch
+      → close back to top apex
+    Stroke + round line-joins = softened points (the unique touch).
+  -->
+  <path
+    d="M 140 24 L 44 140 L 124 140 L 110 232 L 212 116 L 132 116 Z"
+    fill="white"
+    stroke="white"
+    stroke-width="14"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+    filter="url(#tf-bolt-shadow)"
+  />
+</svg>
