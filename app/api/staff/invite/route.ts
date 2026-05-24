@@ -22,7 +22,11 @@ const InviteSchema = z.object({
   name:     z.string().min(1).max(100).trim(),
   email:    z.string().email(),
   eventIds: z.array(z.string().min(1)).min(1, "Select at least one event"),
-  orgId:    z.string().min(1),
+  // orgId is now optional. When omitted, the handler uses the caller's own
+  // orgId from their session (the secure default). Still accepted when sent
+  // — used by super_admin for cross-org management, and validated against
+  // the caller's actual org membership below.
+  orgId:    z.string().min(1).optional(),
 });
 
 // ── POST — create invite ──────────────────────────────────────────────
@@ -43,10 +47,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { name, email, eventIds, orgId } = parsed.data;
+  const { name, email, eventIds, orgId: bodyOrgId } = parsed.data;
 
-  // Verify the caller is actually a member of the claimed org.
-  // super_admin bypasses this check.
+  // Resolve the target org:
+  //   • If client supplied orgId, use that (super_admin cross-org case).
+  //   • Otherwise fall back to the caller's own orgId from their session.
+  // Then verify the caller is actually a member of that org.
+  // super_admin bypasses the membership check.
+  const orgId = bodyOrgId ?? guard.orgId ?? "";
+
+  if (!orgId) {
+    return NextResponse.json(
+      { error: "No organisation found for your account." },
+      { status: 400 }
+    );
+  }
+
   if (guard.role !== "super_admin" && guard.orgId !== orgId) {
     return NextResponse.json(
       { error: "Forbidden — you are not a member of this organisation" },
