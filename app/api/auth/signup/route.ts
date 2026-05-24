@@ -15,8 +15,7 @@ export const dynamic = "force-dynamic";
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { slugify } from "@/lib/utils";
+import { ensureOrgForUser } from "@/lib/orgs/ensureOrgForUser";
 import { z } from "zod";
 
 const SUPABASE_URL     = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? "";
@@ -67,61 +66,23 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // ── Idempotency: return existing org if already set up ────────────
-    const existingMember = await db.orgMember.findFirst({
-      where:   { supabaseUserId },
-      include: { org: true },
-    }).catch(() => null);
-
-    if (existingMember?.org) {
-      console.log("[/api/auth/signup] existing org found", {
-        userId: supabaseUserId,
-        orgId:  existingMember.orgId,
-      });
-      return NextResponse.json({
-        orgId:    existingMember.orgId,
-        name:     existingMember.org.name,
-        slug:     existingMember.org.slug,
-        existing: true,
-      });
-    }
-
-    // ── Generate unique slug ──────────────────────────────────────────
-    const baseSlug = slugify(orgName) || "my-org";
-    const existing = await db.organisation.findUnique({ where: { slug: baseSlug } }).catch(() => null);
-    const finalSlug = existing
-      ? `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
-      : baseSlug;
-
-    // ── Create Organisation + OrgMember atomically ────────────────────
-    const org = await db.organisation.create({
-      data: {
-        name:          orgName,
-        slug:          finalSlug,
-        plan:          "starter",
-        payoutVerified: false,
-        kycStatus:     "none",
-        members: {
-          create: { supabaseUserId, role: "owner" },
-        },
-      },
-    });
-
-    console.log("[/api/auth/signup] org created", {
-      userId: supabaseUserId,
-      orgId:  org.id,
-      name:   org.name,
-    });
-
-    // ── Upsert Profile with orgId ─────────────────────────────────────
-    await db.profile.upsert({
-      where:  { supabaseUserId },
-      update: { role: "organiser", orgId: org.id },
-      create: { supabaseUserId, role: "organiser", orgId: org.id },
+    // ── Single call: idempotent, race-safe org provisioning ──────────
+    // The helper handles all four cases:
+    //   (a) user already has an org → returns existing
+    //   (b) fresh user → creates org + member + syncs Profile
+    //   (c) slug clash with unrelated org → retries with new suffix
+    //   (d) parallel request beat us → catches P2002, refetches
+    const result = await ensureOrgForUser({
+      supabaseUserId,
+      orgName,
+      userMetadata: null, // explicit orgName always wins on this route
+      userEmail:    null,
     });
 
     // ── Sync role to Supabase JWT metadata (fire-and-forget) ─────────
-    if (SUPABASE_SERVICE && SUPABASE_URL) {
+    // Only fired for newly-created orgs — for "existing" results, the
+    // metadata is presumably already correct from the original setup.
+    if (!result.existing && SUPABASE_SERVICE && SUPABASE_URL) {
       fetch(`${SUPABASE_URL}/auth/v1/admin/users/${supabaseUserId}`, {
         method:  "PUT",
         headers: {
@@ -137,7 +98,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ orgId: org.id, name: org.name, slug: org.slug });
+    return NextResponse.json({
+      orgId:    result.orgId,
+      name:     result.orgName,
+      slug:     result.orgSlug,
+      existing: result.existing,
+    });
 
   } catch (err: any) {
     // Log with full detail so we can diagnose any future schema mismatches

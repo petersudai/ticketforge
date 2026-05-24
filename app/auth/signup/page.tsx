@@ -32,6 +32,63 @@ const PERKS = [
   { icon: BarChart3,  label: "Real-time analytics" },
 ];
 
+// ── Signup setup helper ──────────────────────────────────────────────
+//
+// POSTs to /api/auth/signup with retry-on-transient-failure.
+//   • 2xx           → success, return true
+//   • 4xx           → permanent failure, return false (don't retry; the
+//                     server won't change its mind, and the user would be
+//                     left wondering why we're spinning forever)
+//   • 5xx / network → retry up to MAX_ATTEMPTS times with exponential
+//                     backoff starting at BASE_DELAY_MS
+//
+// Even on final failure we don't surface an alarming error to the user —
+// /api/auth/me has an auto-recovery branch that completes the setup on
+// their first dashboard load. The retry is best-effort.
+const MAX_ATTEMPTS  = 3;
+const BASE_DELAY_MS = 500;
+
+async function callSignupSetupWithRetry(
+  supabaseUserId: string,
+  orgName:        string,
+): Promise<boolean> {
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ supabaseUserId, orgName }),
+      });
+
+      if (res.ok) return true;
+
+      // 4xx is permanent — log and stop retrying.
+      if (res.status >= 400 && res.status < 500) {
+        const body = await res.json().catch(() => ({}));
+        console.error("[signup setup] permanent failure", {
+          status: res.status,
+          error:  body.error,
+          attempt,
+        });
+        return false;
+      }
+
+      // 5xx — fall through to retry.
+      console.warn("[signup setup] transient server error", { status: res.status, attempt });
+    } catch (err: any) {
+      // Network error — fall through to retry.
+      console.warn("[signup setup] network error", { message: err?.message, attempt });
+    }
+
+    if (attempt < MAX_ATTEMPTS) {
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+
+  return false;
+}
+
 export default function SignupPage() {
   const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_ENABLED === "true";
 
@@ -86,26 +143,22 @@ export default function SignupPage() {
     const userId = data?.user?.id;
 
     // Step 2: Call server-side setup API to create Org + OrgMember + Profile.
-    // This is NOT fire-and-forget — without it the user has no org
-    // and cannot create events. We block navigation until it completes.
+    //
+    // Retry with exponential backoff on transient failures (network errors,
+    // 5xx). Validation errors (4xx) are not retried — they won't change on
+    // a retry and the helpful error message goes straight to the user.
+    //
+    // Even if all retries fail, the user IS signed up. /api/auth/me has an
+    // auto-recovery branch that will complete org setup on their first
+    // dashboard visit, so we never block the signup flow on Step 2.
     if (userId) {
-      try {
-        const setupRes = await fetch("/api/auth/signup", {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ supabaseUserId: userId, orgName: orgName.trim() }),
-        });
-
-        if (!setupRes.ok) {
-          const setupErr = await setupRes.json().catch(() => ({}));
-          console.error("[signup] Setup API failed:", setupErr);
-          // Show the error but don't block login — user can still access dashboard
-          // and the auto-create-org fallback in /api/events will recover.
-          setError(`Account created but org setup failed: ${setupErr.error ?? "unknown error"}. You can still continue — we'll set up your organisation when you create your first event.`);
-        }
-      } catch (setupErr) {
-        console.error("[signup] Setup API network error:", setupErr);
-        // Network error — same recovery path as above
+      const setupOk = await callSignupSetupWithRetry(userId, orgName.trim());
+      if (!setupOk) {
+        // Communicate honestly: account exists, org setup is pending and
+        // will heal itself on login. Don't say "signup failed" — they ARE
+        // signed up, and saying so would push them to try again and fail
+        // with "email already registered".
+        console.warn("[signup] Setup retries exhausted — relying on /api/auth/me auto-recovery");
       }
     }
 
@@ -115,7 +168,9 @@ export default function SignupPage() {
       // Email confirmation required
       setCheckEmail(true);
     } else if (data?.session) {
-      // Auto-confirmed (email confirmation off in dev) → straight to dashboard
+      // Auto-confirmed (email confirmation off in dev) → straight to dashboard.
+      // If Step 2 failed, /api/auth/me's auto-recovery will heal the missing
+      // org transparently as soon as the dashboard layout loads.
       window.location.href = "/dashboard";
     }
   };

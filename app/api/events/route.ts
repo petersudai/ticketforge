@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireOrganiser } from "@/lib/api-auth";
+import { ensureOrgForUser } from "@/lib/orgs/ensureOrgForUser";
 import { slugify } from "@/lib/utils";
 import { z } from "zod";
 import { randomBytes } from "crypto";
@@ -118,51 +119,26 @@ export async function POST(req: NextRequest) {
   let orgId = guard.orgId;
 
   // ── Onboarding gap fix ────────────────────────────────────────────
-  // Users who signed up before the DB was wired have a Supabase account
-  // but no Organisation or OrgMember record. Auto-create one now so they
-  // can create events without going through onboarding again.
+  // Users who signed up before /api/auth/signup completed (network blip,
+  // cold function, etc.) have a Supabase account but no Organisation.
+  // Use the shared helper to provision one now — same code path as
+  // /api/auth/signup and /api/auth/me, so behaviour stays consistent.
   if (!orgId && guard.role !== "super_admin") {
     try {
-      const userName =
-        guard.user.user_metadata?.full_name ??
-        guard.user.user_metadata?.name ??
-        guard.user.email?.split("@")[0] ??
-        "My Organisation";
-
-      const baseSlug = slugify(userName) || "org";
-      const existingSlug = await db.organisation.findUnique({ where: { slug: baseSlug } }).catch(() => null);
-      const finalOrgSlug = existingSlug
-        ? `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
-        : baseSlug;
-
-      const newOrg = await db.organisation.create({
-        data: {
-          name:          userName,
-          slug:          finalOrgSlug,
-          plan:          "starter",
-          payoutVerified: false,
-          members: {
-            create: { supabaseUserId: guard.user.id, role: "owner" },
-          },
-        },
+      const recovered = await ensureOrgForUser({
+        supabaseUserId: guard.user.id,
+        orgName:        guard.user.user_metadata?.org_name ?? null,
+        userMetadata:   guard.user.user_metadata,
+        userEmail:      guard.user.email ?? null,
       });
-
-      // Also create / update Profile row
-      await db.profile.upsert({
-        where:  { supabaseUserId: guard.user.id },
-        update: { orgId: newOrg.id, updatedAt: new Date() },
-        create: { supabaseUserId: guard.user.id, role: "organiser", orgId: newOrg.id },
-      }).catch(() => null);
-
-      orgId = newOrg.id;
-
-      console.log("[POST /api/events] auto-created org for existing user", {
-        userId: guard.user.id,
-        orgId:  newOrg.id,
-        name:   newOrg.name,
+      orgId = recovered.orgId;
+      console.log("[POST /api/events] auto-recovered org for user", {
+        userId:   guard.user.id,
+        orgId:    recovered.orgId,
+        existing: recovered.existing,
       });
     } catch (err) {
-      console.error("[POST /api/events] failed to auto-create org", err);
+      console.error("[POST /api/events] failed to auto-recover org", err);
       return NextResponse.json(
         { error: "Could not create your organisation. Please contact support." },
         { status: 500 }

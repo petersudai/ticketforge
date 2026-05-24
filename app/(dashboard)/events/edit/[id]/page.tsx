@@ -9,6 +9,7 @@ import {
   Card, CardHeader, CardTitle, Button, Input, Select,
   Textarea, Field, Badge, StatCard, EmptyState,
 } from "@/components/ui";
+import { toast } from "@/lib/toast";
 import { formatDate, slugify } from "@/lib/utils";
 import { CATEGORIES, normalizeCategory } from "@/lib/constants/categories";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -199,7 +200,7 @@ function TierRow({
           <Edit2 className="w-3.5 h-3.5" />
         </button>
         <button onClick={async () => {
-          if (soldCount > 0) { alert("Can't delete — tickets already sold. Hide it instead."); return; }
+          if (soldCount > 0) { toast.warning("Can't delete — tickets already sold. Hide it instead."); return; }
           if (!confirm(`Delete "${tier.name}"?`)) return;
           await onDelete(tier.id);
         }}
@@ -428,14 +429,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        alert(d.error ?? "Save failed");
+        toast.error(d.error ?? "Save failed");
         return;
       }
       await refetch();
       setSaveMsg("Saved ✓"); setTimeout(() => setSaveMsg(""), 2500);
     } catch (err) {
       console.error("[save]", err);
-      alert("Network error. Please try again.");
+      toast.error("Network error. Please try again.");
     } finally {
       setSaving("");
     }
@@ -455,12 +456,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
       if (!res.ok && res.status !== 204) {
         const d = await res.json().catch(() => ({}));
-        alert(d.error ?? "Delete failed");
+        toast.error(d.error ?? "Delete failed");
         return;
       }
       router.push("/dashboard");
     } catch (err) {
-      alert("Network error. Please try again.");
+      toast.error("Network error. Please try again.");
     }
   };
 
@@ -494,7 +495,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     if (res.ok || res.status === 204) return;
     const d = await res.json().catch(() => ({}));
     setTiers(prevTiers);
-    alert(d.error ?? "Delete failed.");
+    toast.error(d.error ?? "Delete failed.");
   };
 
   const handleTierMove = async (tierId: string, dir: -1 | 1) => {
@@ -524,12 +525,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        alert(d.error ?? "Undo failed");
+        toast.error(d.error ?? "Undo failed");
         return;
       }
       await refetch();
     } catch {
-      alert("Network error. Please try again.");
+      toast.error("Network error. Please try again.");
     }
   };
 
@@ -538,7 +539,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("Image must be under 2 MB. Try compressing it first.");
+      toast.error("Image must be under 2 MB. Try compressing it first.");
       e.target.value = "";
       return;
     }
@@ -562,7 +563,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
     if (error) {
       console.warn("[edit event] Image upload failed:", error.message);
-      alert("Image upload failed. Please try again.");
+      toast.error("Image upload failed. Please try again.");
       setBgUploading(false);
       return;
     }
@@ -579,13 +580,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const handleCopyInviteLink = async (tierId: string) => {
     try {
       const res = await fetch(`/api/tiers/${tierId}/invite-token`, { method: "POST" });
-      if (!res.ok) { alert("Failed to generate invite link."); return; }
+      if (!res.ok) { toast.error("Failed to generate invite link."); return; }
       const { inviteUrl } = await res.json();
       await navigator.clipboard.writeText(inviteUrl);
       // Update local tier with new token
       setTiers(ts => ts.map(t => t.id === tierId ? { ...t, inviteToken: inviteUrl.split("?tier=")[1] } : t));
     } catch {
-      alert("Could not copy invite link.");
+      toast.error("Could not copy invite link.");
     }
   };
 
