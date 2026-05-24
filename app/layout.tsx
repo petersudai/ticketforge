@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { ToastViewport } from "@/components/ui/ToastViewport";
 
 export const metadata: Metadata = {
   title: "TicketForge Pro — Event Ticketing Platform",
@@ -25,6 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* AuthProvider: single getUser() call shared across all components */}
         <AuthProvider>
           {children}
+          {/* App-wide toast viewport. Mounted once here so toast.error()
+              etc. dispatched from any component reach this renderer. */}
+          <ToastViewport />
         </AuthProvider>
       </body>
     </html>

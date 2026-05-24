@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, Button, Input, Select, Textarea, Field } from "@/components/ui";
 import { TipBubble } from "@/components/ui/TipBubble";
+import { toast } from "@/lib/toast";
 import { slugify, formatDate } from "@/lib/utils";
 import { Plus, Trash2, Upload, Save, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tier } from "@/store/useStore";
@@ -182,7 +183,7 @@ export default function NewEventPage() {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("Image must be under 2 MB. Try compressing it first.");
+      toast.error("Image must be under 2 MB. Try compressing it first.");
       e.target.value = "";
       return;
     }
@@ -248,7 +249,14 @@ export default function NewEventPage() {
     const validationErrors = validate();
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      // Instant scroll — smooth animation delays the user's reaction by
+      // ~500ms which is what made the top banner feel easy to miss.
+      window.scrollTo({ top: 0, behavior: "auto" });
+      // Also surface the count as a toast so users who somehow miss the
+      // banner (small screen, scrolled state) still get a clear signal.
+      toast.error(
+        `${validationErrors.length} thing${validationErrors.length === 1 ? "" : "s"} need fixing before publishing.`
+      );
       return;
     }
     setErrors([]);
@@ -270,15 +278,16 @@ export default function NewEventPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error ?? "Failed to save event. Please try again.");
+        toast.error(data.error ?? "Failed to save event. Please try again.");
         setSaving(false);
         return;
       }
 
+      toast.success("Event published.");
       router.push("/dashboard");
     } catch (err) {
       console.error("[new event] Save failed:", err);
-      alert("Network error. Please check your connection and try again.");
+      toast.error("Network error. Please check your connection and try again.");
       setSaving(false);
     }
   };
