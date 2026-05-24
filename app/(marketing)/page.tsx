@@ -745,7 +745,7 @@ function Stats() {
             { value: "99.9%", label: "Uptime SLA", color: "#fdcb6e" },
           ].map((s, i) => (
             <Reveal key={s.label} delay={i * 90}>
-              <div className="font-heading font-extrabold text-[26px] sm:text-[34px] md:text-[44px] tracking-tight mb-1.5 break-words" style={{ color: s.color }}>{s.value}</div>
+              <div className="font-heading font-extrabold text-[24px] sm:text-[26px] md:text-[28px] lg:text-[32px] xl:text-[36px] tracking-tight mb-1.5 whitespace-nowrap" style={{ color: s.color }}>{s.value}</div>
               <div className="text-[11px] sm:text-[13px] text-white/35 leading-snug">{s.label}</div>
             </Reveal>
           ))}
