@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useEvents } from "@/lib/hooks/useEvents";
-import { useStore } from "@/store/useStore";
 import { useAuth } from "@/lib/auth-context";
 import { isSuperAdmin } from "@/lib/roles";
 import { Card, CardTitle, CardHeader, Button, EmptyState } from "@/components/ui";
 import { formatDate, formatCompact } from "@/lib/utils";
-import { Plus, CalendarDays, ArrowRight, ShieldCheck } from "lucide-react";
+import { aggregateFees } from "@/lib/fees";
+import { Plus, CalendarDays, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
 import { OnboardingBanners } from "@/components/dashboard/OnboardingBanners";
 import { TipBubble } from "@/components/ui/TipBubble";
 
@@ -60,7 +60,6 @@ function LoadingSkeleton() {
 
 export default function DashboardPage() {
   const { events, loading, error } = useEvents();
-  const { platformFee } = useStore();
   const { role } = useAuth();
   const superAdmin = isSuperAdmin(role);
 
@@ -86,13 +85,25 @@ export default function DashboardPage() {
   const totalTickets = events.reduce(
     (s, e) => s + primaryAttendees(e.attendees ?? []).length, 0,
   );
-  const paidAttendees = events.flatMap(e =>
-    primaryAttendees(e.attendees ?? []).filter(a => a.payStatus === "paid"),
+
+  // Build aggregate input across all paid tickets, grouped by their event so
+  // that per-event waivers (launch credit) and currency are respected. Each
+  // paid attendee becomes one quantity=1 row — we don't bucket by tier here
+  // because the calculator only needs ticket price + waiver state + currency.
+  const paidRows = events.flatMap(e =>
+    primaryAttendees(e.attendees ?? [])
+      .filter(a => a.payStatus === "paid")
+      .map(a => ({
+        ticketPrice:      a.pricePaid * ((a as any).tierCapacity ?? 1),
+        quantity:         1,
+        currency:         e.currency ?? "KES",
+        mode:             ((e as any).feeMode ?? "absorbed") as "absorbed" | "passthrough",
+        commissionWaived: Boolean((e as any).commissionWaived),
+      }))
   );
-  const grossRevenue = paidAttendees.reduce(
-    (s, a) => s + a.pricePaid * ((a as any).tierCapacity ?? 1), 0,
-  );
-  const netRevenue = grossRevenue * (1 - platformFee / 100);
+  const feesRollup   = aggregateFees(paidRows);
+  const grossRevenue = feesRollup.grossRevenue;
+  const netRevenue   = feesRollup.netToOrganiser;
 
   const totalCheckedIn = events.reduce(
     (s, e) => s + (e.attendees ?? []).filter(a => a.checkedIn).length, 0,
@@ -109,6 +120,13 @@ export default function DashboardPage() {
     (s, a) => s + a.pricePaid * ((a as any).tierCapacity ?? 1), 0,
   );
 
+  // Launch credit visibility — for organisers (not super_admin) who haven't
+  // published any event yet, show a prominent "first event on us" banner.
+  // Once they publish their first event, the credit is consumed atomically
+  // (see app/api/events/route.ts POST) and this banner naturally disappears
+  // because events.length > 0 from that point on.
+  const hasNoEventsYet = !superAdmin && events.length === 0;
+
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
       {/* Welcome explainer — visible until dismissed, persisted per-user */}
@@ -119,6 +137,41 @@ export default function DashboardPage() {
       />
 
       <OnboardingBanners />
+
+      {/* Launch credit banner — only when the organiser hasn't used theirs yet.
+          Disappears once they publish their first event (events.length > 0). */}
+      {hasNoEventsYet && (
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-xl"
+          style={{
+            background: "linear-gradient(135deg, rgba(108,92,231,0.12), rgba(72,52,212,0.06))",
+            border:     "1px solid rgba(108,92,231,0.3)",
+          }}
+        >
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "rgba(108,92,231,0.2)", color: "#a29cf4" }}
+          >
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0 text-[13px]">
+            <div className="font-semibold text-white">Your first event is on us</div>
+            <div className="text-white/55 text-[12px] mt-0.5">
+              Zero platform commission on your first event's ticket sales. The credit is automatically applied — just publish.
+            </div>
+          </div>
+          <Link
+            href="/events/new"
+            className="text-[12px] font-semibold px-3 py-2 rounded-lg shrink-0 transition-colors flex items-center gap-1.5"
+            style={{
+              background: "#6C5CE7",
+              color:      "#fff",
+            }}
+          >
+            Create event <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* Super-admin context banner — only shown when role is super_admin.
           Makes it explicit that the stat cards below aggregate every event

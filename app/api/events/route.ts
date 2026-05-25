@@ -159,35 +159,69 @@ export async function POST(req: NextRequest) {
     finalSlug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
   }
 
+  // ── Launch promo: first event per organisation is commission-free ────
+  // We atomically claim the credit by setting Organisation.launchCreditUsedAt
+  // in the SAME transaction as the event create. If two requests race to
+  // publish the org's first event, only one wins the launch waiver.
+  //
+  // The waiver is snapshotted onto the event (commissionWaived=true) so the
+  // fees calculator can stay pure — no need to query the org per ticket sale.
+  const org = await db.organisation.findUnique({
+    where:  { id: orgId },
+    select: { launchCreditUsedAt: true },
+  });
+  const eligibleForLaunchCredit = org?.launchCreditUsedAt === null;
+
   try {
-    const event = await db.event.create({
-      data: {
-        ...eventData,
-        slug:  finalSlug,
-        orgId,
-        tiers: {
-          create: tiers.map((t, i) => {
-            const { saleStartsAt, saleEndsAt, ...rest } = t;
-            return {
-              ...rest,
-              sortOrder:    t.sortOrder ?? i,
-              saleStartsAt: saleStartsAt ? new Date(saleStartsAt) : null,
-              saleEndsAt:   saleEndsAt   ? new Date(saleEndsAt)   : null,
-              inviteToken:  t.hidden ? randomBytes(24).toString("hex") : null,
-            };
-          }),
+    const event = await db.$transaction(async (tx) => {
+      // Re-check launch credit inside the transaction to close the race window.
+      // If two events publish back-to-back, only the first gets the waiver.
+      let waiveCommission = false;
+      if (eligibleForLaunchCredit) {
+        const fresh = await tx.organisation.findUnique({
+          where:  { id: orgId },
+          select: { launchCreditUsedAt: true },
+        });
+        if (fresh?.launchCreditUsedAt === null) {
+          waiveCommission = true;
+          await tx.organisation.update({
+            where: { id: orgId },
+            data:  { launchCreditUsedAt: new Date() },
+          });
+        }
+      }
+
+      return await tx.event.create({
+        data: {
+          ...eventData,
+          slug:             finalSlug,
+          orgId,
+          commissionWaived: waiveCommission,
+          tiers: {
+            create: tiers.map((t, i) => {
+              const { saleStartsAt, saleEndsAt, ...rest } = t;
+              return {
+                ...rest,
+                sortOrder:    t.sortOrder ?? i,
+                saleStartsAt: saleStartsAt ? new Date(saleStartsAt) : null,
+                saleEndsAt:   saleEndsAt   ? new Date(saleEndsAt)   : null,
+                inviteToken:  t.hidden ? randomBytes(24).toString("hex") : null,
+              };
+            }),
+          },
         },
-      },
-      include: {
-        tiers:     { orderBy: { sortOrder: "asc" } },
-        attendees: true,
-      },
+        include: {
+          tiers:     { orderBy: { sortOrder: "asc" } },
+          attendees: true,
+        },
+      });
     });
 
     console.log("[POST /api/events] created", {
-      eventId: event.id,
+      eventId:          event.id,
       orgId,
-      userId:  guard.user.id,
+      userId:           guard.user.id,
+      commissionWaived: (event as any).commissionWaived,
     });
 
     return NextResponse.json(event, { status: 201 });

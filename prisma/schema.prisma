@@ -39,6 +39,11 @@ model Organisation {
   // Scanner override PIN — stored server-side only; never sent to clients.
   overridePin String @default("1234")
 
+  // Launch promo tracking — "your first event is free" applies to whichever
+  // event is published first. Once set, all future events on this org pay
+  // standard commission. See lib/fees.ts for full pricing model.
+  launchCreditUsedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -124,6 +129,18 @@ model Event {
   bgImage     String?
   mpesaSc     String?
   published   Boolean  @default(true)
+
+  // Fee handling — see lib/fees.ts
+  //   "absorbed"    (default) — organiser absorbs commission + M-Pesa fee
+  //   "passthrough"           — buyer pays fees on top, organiser gets full price
+  // V1 ships absorbed-only; the field exists so we can flip events to
+  // passthrough in V1.5 without a migration.
+  feeMode          String  @default("absorbed")
+  // True when this event was published as the org's first event and qualifies
+  // for the launch promo (zero commission on its ticket sales). Snapshotted
+  // here so the calculator can decide per-event without re-querying the org.
+  commissionWaived Boolean @default(false)
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -249,6 +266,17 @@ model Order {
   payStatus          String   @default("pending")  // "free" | "paid"
   quantity           Int      @default(1)           // tier slots purchased
   ticketCount        Int      @default(1)           // = quantity × tier.capacity (individual entry tickets)
+
+  // ── Fee snapshot at purchase time ─────────────────────────────────
+  // Preserves audit trail when pricing rules change. Refunds, disputes,
+  // and historical revenue reports all read from these fields rather
+  // than re-running today's calculator against a past purchase.
+  // Defaults are zero so existing rows stay valid without a backfill.
+  commissionPaid     Float    @default(0)           // sum across all tickets in this order
+  mpesaFeePaid       Float    @default(0)
+  feeModeUsed        String   @default("absorbed")  // mode at time of purchase
+  commissionWaived   Boolean  @default(false)       // true → launch promo applied
+
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
