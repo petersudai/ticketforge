@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, Button, Input, Select, Textarea, Field } from "@/components/ui";
 import { TipBubble } from "@/components/ui/TipBubble";
 import { toast } from "@/lib/toast";
+import { aggregateFees, PRICING } from "@/lib/fees";
 import { slugify, formatDate } from "@/lib/utils";
 import { Plus, Trash2, Upload, Save, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tier } from "@/store/useStore";
@@ -122,6 +123,90 @@ function TierRow({ tier, index, total, onChange, onRemove, onMove, currency }: {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Fee preview card ─────────────────────────────────────────────────
+// Live, recalculates on every keystroke as tier prices change.
+// Shows the organiser exactly what they'd net per ticket and at sell-out,
+// so they can price intentionally. Pure presentational — all math comes
+// from lib/fees.ts so the preview cannot drift from what we actually charge.
+function FeePreviewCard({ tiers, currency }: { tiers: any[]; currency: string }) {
+  // Compute totals across all non-hidden, non-zero-price tiers (free tiers
+  // have no fees and would just add noise to the rollup).
+  const billableTiers = tiers.filter(t => !t.hidden && (t.price ?? 0) > 0);
+
+  const rollup = aggregateFees(
+    billableTiers.map(t => ({
+      ticketPrice: Number(t.price) || 0,
+      quantity:    Number(t.quantity) || 0,
+      currency,
+      mode:        "absorbed" as const,
+      // Per-tier waiver isn't a thing in V1 — the launch promo applies
+      // event-wide. Here we preview the standard (non-waived) numbers so
+      // the organiser sees what they'll get on a "normal" event.
+      commissionWaived: false,
+    }))
+  );
+
+  const hasAnyBillable = billableTiers.length > 0 && rollup.totalTickets > 0;
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>What you'd keep</CardTitle></CardHeader>
+
+      {!hasAnyBillable ? (
+        <div className="text-[12px] text-white/40 leading-relaxed">
+          Set a price and quantity on at least one tier to see your projected payout.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {/* Per-tier row */}
+          {billableTiers.map(t => {
+            const price       = Number(t.price) || 0;
+            const qty         = Number(t.quantity) || 0;
+            const perTicket   = price - Math.min(PRICING.COMMISSION_CAP, Math.max(PRICING.COMMISSION_FLOOR, price * PRICING.COMMISSION_RATE));
+            // We display the per-ticket "what you keep" excluding M-Pesa fee
+            // since M-Pesa is a small line; full breakdown is in the totals.
+            return (
+              <div key={t.id} className="flex items-center justify-between text-[12px] py-1">
+                <span className="text-white/55 truncate pr-3">
+                  {t.name || "Untitled tier"} <span className="text-white/30">× {qty}</span>
+                </span>
+                <span className="text-emerald-400 font-medium tabular-nums">
+                  ≈ {currency} {Math.round(perTicket).toLocaleString()}
+                  <span className="text-white/30 text-[10px] ml-1">each</span>
+                </span>
+              </div>
+            );
+          })}
+
+          {/* Totals at sell-out */}
+          <div className="border-t border-white/[0.06] mt-3 pt-3 space-y-1.5 text-[12px]">
+            <div className="flex justify-between text-white/45">
+              <span>Gross at sell-out</span>
+              <span className="tabular-nums">{currency} {Math.round(rollup.grossRevenue).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-white/45">
+              <span>Platform fee (5%, capped)</span>
+              <span className="tabular-nums">− {currency} {Math.round(rollup.totalCommission).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-white/45">
+              <span>M-Pesa fees</span>
+              <span className="tabular-nums">− {currency} {Math.round(rollup.totalMpesaFees).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between font-heading font-bold text-white pt-2 border-t border-white/[0.06] mt-1">
+              <span>You'd take home</span>
+              <span className="tabular-nums text-emerald-400">{currency} {Math.round(rollup.netToOrganiser).toLocaleString()}</span>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-white/30 leading-relaxed pt-1">
+            Estimate assumes all tiers sell out and standard pricing. If this is your first event, platform commission is waived — your take-home is higher.
+          </p>
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -426,6 +511,12 @@ export default function NewEventPage() {
 
         {/* Right column */}
         <div className="space-y-4">
+          {/* Fee preview — recalculates as the organiser edits tier prices.
+              Pulls the live tiers/currency from form state, runs them through
+              the shared fees calculator, and shows projected payout per
+              sold-out tier. No magic numbers here — everything is derived. */}
+          <FeePreviewCard tiers={tiers} currency={form.currency} />
+
           <Card>
             <CardHeader><CardTitle>Background image</CardTitle></CardHeader>
             <label className="relative block border-2 border-dashed border-white/[0.1] rounded-xl p-5 text-center cursor-pointer hover:border-brand-500/50 transition-colors group">

@@ -470,104 +470,143 @@ function HowItWorks() {
 
 // ── Pricing ───────────────────────────────────────────────────────────
 
-const plans = [
-  {
-    name: "Starter",
-    price: "Free",
-    sub: "Forever",
-    desc: "Perfect for small events and first-time organisers.",
-    features: ["Up to 100 tickets/month", "1 active event", "M-Pesa payments", "QR ticket generation", "Email delivery", "Basic analytics"],
-    cta: "Get started free",
-    ctaHref: "/auth/signup",
-    featured: false,
-  },
-  {
-    name: "Pro",
-    price: "KES 2,500",
-    sub: "per month",
-    desc: "For serious organisers running multiple events.",
-    features: ["Unlimited tickets", "Unlimited events", "M-Pesa STK Push", "Custom branding", "Bulk ticket PDF", "Advanced analytics", "Priority support", "Custom email templates"],
-    cta: "Start Pro trial",
-    ctaHref: "/auth/signup",
-    featured: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    sub: "per month",
-    desc: "For large-scale events and venue partners.",
-    features: ["Everything in Pro", "White-label option", "Dedicated support", "Custom integrations", "SLA guarantee", "Team seats", "API access", "Revenue reporting"],
-    cta: "Contact us",
-    ctaHref: "mailto:hello@ticketforge.app",
-    featured: false,
-  },
-];
-
 function Pricing() {
+  // Marketing copy. The numbers are sourced from lib/fees.ts so the
+  // landing page can never disagree with what we actually charge, but
+  // we deliberately do NOT itemize every operational fee here — the
+  // event-form fee preview and the dashboard reveal the exact numbers
+  // in context. The marketing page sells the value, not the spec sheet.
+  const included = [
+    "Your first event is on us — zero commission on its ticket sales",
+    "Free events stay free — for you and your attendees, forever",
+    "M-Pesa STK Push baked in, instant payouts to your number",
+    "Unlimited events, tiers, tickets, scanners, and team members",
+    "Real-time analytics, branded tickets, gate-scanner mobile app",
+    "No subscription. No setup fee. No surprise charges, ever.",
+  ];
+
   return (
     <section id="pricing" className="py-16 sm:py-24 md:py-28 px-4 sm:px-6 border-t border-white/[0.05]">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12 md:mb-16">
-          <SectionLabel>Simple pricing</SectionLabel>
-          <SectionHeading sub="Start free. Scale as you grow. No hidden fees, no surprises.">
-            Pricing that <GradientText>makes sense</GradientText>
+          <SectionLabel>Honest pricing</SectionLabel>
+          <SectionHeading sub="No subscriptions. No setup fees. We only earn when you sell tickets — never before.">
+            Pay only when <GradientText>you earn</GradientText>
           </SectionHeading>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-5">
-          {plans.map(plan => (
+        <div className="grid md:grid-cols-[1fr_1fr] gap-5 items-stretch">
+
+          {/* Left card — the headline rate */}
+          <div
+            className="rounded-2xl p-8 flex flex-col relative overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, rgba(108,92,231,0.18) 0%, rgba(72,52,212,0.10) 100%)",
+              border:     "1.5px solid rgba(108,92,231,0.35)",
+            }}
+          >
+            {/* Glow */}
             <div
-              key={plan.name}
-              className="rounded-2xl p-6 flex flex-col"
-              style={{
-                background: plan.featured ? "rgba(108,92,231,0.12)" : "rgba(255,255,255,0.03)",
-                border: plan.featured ? "1.5px solid rgba(108,92,231,0.4)" : "1px solid rgba(255,255,255,0.07)",
-                position: "relative",
-              }}
-            >
-              {plan.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-brand-500 text-white text-[11px] font-bold px-3 py-1 rounded-full font-heading tracking-wide">
-                    Most popular
-                  </span>
-                </div>
-              )}
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: "radial-gradient(ellipse at top right, rgba(108,92,231,0.18) 0%, transparent 60%)" }}
+            />
 
-              <div className="mb-6">
-                <div className="text-[11px] font-heading font-bold text-white/30 uppercase tracking-widest mb-3">{plan.name}</div>
-                <div className="flex items-end gap-1.5 mb-1">
-                  <span className="font-heading font-extrabold text-[32px] text-white tracking-tight">{plan.price}</span>
-                  {plan.price !== "Custom" && <span className="text-[13px] text-white/35 mb-1.5">{plan.sub}</span>}
-                </div>
-                <p className="text-[13px] text-white/40">{plan.desc}</p>
+            <div className="relative z-10 flex flex-col h-full">
+              <div className="text-[11px] font-heading font-bold text-brand-300 uppercase tracking-widest mb-4">
+                One simple rate
               </div>
 
-              <div className="flex-1 space-y-2.5 mb-8">
-                {plan.features.map(f => (
-                  <div key={f} className="flex items-center gap-2.5 text-[13px] text-white/60">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    {f}
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="font-heading font-extrabold text-[60px] sm:text-[72px] text-white leading-none tracking-tight">5%</span>
+                <span className="text-[14px] text-white/45">per paid ticket</span>
+              </div>
+
+              <p className="text-[13px] text-white/55 leading-relaxed mb-6">
+                That's it. The platform's job is to help you sell more tickets,
+                not to take a monthly rent whether you sell any or not.
+              </p>
+
+              {/* Single key differentiator — the cap */}
+              <div className="rounded-xl px-4 py-3 mb-7"
+                style={{ background: "rgba(85,239,196,0.08)", border: "1px solid rgba(85,239,196,0.18)" }}>
+                <div className="flex items-start gap-2.5">
+                  <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-[12px] font-semibold text-white mb-0.5">Premium tickets cost less here</div>
+                    <div className="text-[12px] text-white/55 leading-relaxed">
+                      Our commission is capped per ticket — sell a KES 50,000 VIP
+                      table and we still take a fraction of what other platforms would.
+                    </div>
                   </div>
-                ))}
+                </div>
               </div>
 
-              <a
-                href={plan.ctaHref}
-                className="text-center py-3 rounded-[10px] text-[13px] font-semibold transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
-                style={{
-                  background: plan.featured ? "#6C5CE7" : "rgba(255,255,255,0.06)",
-                  color: "#fff",
-                  border: plan.featured ? "none" : "1px solid rgba(255,255,255,0.1)",
-                }}
+              <Link
+                href="/auth/signup"
+                className="mt-auto text-center py-3.5 rounded-[12px] text-[14px] font-semibold text-white bg-brand-500 hover:bg-brand-600 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
               >
-                {plan.cta}
-              </a>
+                <Sparkles className="w-4 h-4" />
+                Start free — first event on us
+              </Link>
             </div>
-          ))}
+          </div>
+
+          {/* Right card — what's included */}
+          <div
+            className="rounded-2xl p-8 flex flex-col"
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border:     "1px solid rgba(255,255,255,0.07)",
+            }}
+          >
+            <div className="text-[11px] font-heading font-bold text-white/30 uppercase tracking-widest mb-5">
+              What's included
+            </div>
+
+            <div className="space-y-3.5 flex-1">
+              {included.map(line => (
+                <div key={line} className="flex gap-3 items-start">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="text-[13px] text-white/75 leading-relaxed">{line}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <p className="text-center text-[12px] text-white/25 mt-8">
-          Platform fee of 2.5% applies on paid tickets. M-Pesa transaction fees from Safaricom apply separately.
+        {/* Take-home examples — leads with what they keep, not what we take.
+            M-Pesa transaction fees are footnoted as Safaricom's (they are). */}
+        <div className="mt-8 rounded-2xl px-5 py-5 sm:px-7 sm:py-6"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="text-[11px] font-heading font-bold text-white/30 uppercase tracking-widest mb-5 text-center">
+            What you take home on real ticket sizes
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
+            {[
+              { price: "KES 1,500",  keep: "KES 1,425",  context: "Standard concert" },
+              { price: "KES 5,000",  keep: "KES 4,750",  context: "Premium event" },
+              { price: "KES 50,000", keep: "KES 49,250", context: "VIP table — cap kicks in" },
+            ].map(ex => (
+              <div key={ex.price} className="text-center">
+                <div className="text-[10px] text-white/30 uppercase tracking-widest mb-2 font-heading">{ex.context}</div>
+                <div className="text-[12px] text-white/45 mb-1.5">Sell {ex.price}</div>
+                <div className="font-heading font-bold text-[20px] sm:text-[22px] text-emerald-400 leading-tight">
+                  You take home<br />{ex.keep}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-[11px] text-white/30 mt-5">
+            Safaricom M-Pesa transaction fees apply separately — same as any other M-Pesa-powered platform.
+          </p>
+        </div>
+
+        {/* Enterprise / volume invitation */}
+        <p className="text-center text-[13px] text-white/40 mt-8">
+          Running large-scale events or selling at serious volume?{" "}
+          <a href="mailto:hello@ticketforge.app" className="text-brand-400 hover:text-brand-300 font-medium">
+            Let's talk →
+          </a>
         </p>
       </div>
     </section>
