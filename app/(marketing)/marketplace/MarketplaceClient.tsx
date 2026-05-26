@@ -18,7 +18,15 @@ export type PublicTier = {
 };
 
 export type PublicEvent = {
-  id: string; name: string; slug: string; date: string; time?: string;
+  id: string; name: string; slug: string;
+  date: string; time?: string;
+  // endDate/endTime power the "is fully over" check. An event with an endDate
+  // is considered past only AFTER that endDate. An event with only date is
+  // considered past starting the day AFTER its date (gives it a full day
+  // grace period). This handles single-day events, multi-day festivals, and
+  // overnight events (e.g. a Friday night gig that ends Sat morning) without
+  // needing to parse the freeform time strings.
+  endDate?: string; endTime?: string;
   venue?: string; organizer?: string; category?: string; description?: string;
   currency: string; accent: string; bgImage?: string; capacity?: number;
   availabilityStatus: "available" | "few_left" | "selling_fast" | "sold_out";
@@ -48,8 +56,39 @@ function cardDateLine(dateStr?: string | null, time?: string | null): string | n
   return time ? `${label}, ${time}` : label;
 }
 
+/**
+ * Has this event fully ended?
+ *
+ * An event is "fully over" when its end day is strictly before today (local
+ * time). We deliberately ignore the time-of-day strings (`time` / `endTime`)
+ * because they're freeform user input ("7 PM", "19:00", "7pm-ish") and
+ * parsing them reliably across formats is fragile. Using whole-day
+ * granularity gives every event the full courtesy of its end date.
+ *
+ *   • Multi-day event:  past when today > endDate
+ *   • Single-day event: past when today > date  (endDate falls back to date)
+ *
+ * String comparison works because dates are stored as YYYY-MM-DD —
+ * lexicographic order matches chronological order.
+ */
+function isEventFullyOver(event: PublicEvent): boolean {
+  const endDay = event.endDate ?? event.date;
+  if (!endDay) return false;
+
+  const now      = new Date();
+  const todayStr =
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+  return endDay < todayStr;
+}
+
 // ── Event card ────────────────────────────────────────────────────────
-function EventCard({ event }: { event: PublicEvent }) {
+//
+// `isPast` reduces visual prominence (opacity, grayscale shift on the hero
+// image, "Ended" tag overriding the active-status badges) and replaces the
+// "Get Tickets" CTA with "View event". The card still links through to the
+// event page in case the visitor wants to see what the lineup was.
+function EventCard({ event, isPast = false }: { event: PublicEvent; isPast?: boolean }) {
   const minPrice    = event.tiers.length > 0 ? Math.min(...event.tiers.map(t => t.price)) : 0;
   const isFree      = event.tiers.length > 0 && minPrice === 0;
   const soldOut     = event.availabilityStatus === "sold_out";
@@ -64,7 +103,15 @@ function EventCard({ event }: { event: PublicEvent }) {
     <Link href={`/events/${event.slug}`} className="group block">
       <div
         className="relative rounded-2xl overflow-hidden flex flex-col h-[390px] border border-white/[0.07] transition-all duration-300 group-hover:border-white/[0.18] group-hover:-translate-y-[3px] group-hover:shadow-2xl"
-        style={{ background: "rgba(15,15,22,0.9)", boxShadow: "0 2px 20px rgba(0,0,0,0.3)", willChange: "transform" }}
+        style={{
+          background:  "rgba(15,15,22,0.9)",
+          boxShadow:   "0 2px 20px rgba(0,0,0,0.3)",
+          willChange:  "transform",
+          // Past events fade and lose colour weight so the eye reads them
+          // as archival without rendering them invisible.
+          opacity:     isPast ? 0.65 : 1,
+          filter:      isPast ? "saturate(0.7)"  : undefined,
+        }}
       >
         {/* Hero (≈60% of card height) */}
         <div
@@ -84,7 +131,22 @@ function EventCard({ event }: { event: PublicEvent }) {
             />
           )}
 
-          {soldOut && (
+          {/* Past events take precedence over sold-out: an ended event is
+              past first, sold-out second. */}
+          {isPast ? (
+            <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+              <span
+                className="text-[11px] font-bold tracking-wide px-4 py-1.5 rounded-full"
+                style={{
+                  background: "rgba(255,255,255,0.08)",
+                  color:      "rgba(255,255,255,0.55)",
+                  border:     "1px solid rgba(255,255,255,0.15)",
+                }}
+              >
+                ENDED
+              </span>
+            </div>
+          ) : soldOut && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <span
                 className="text-[11px] font-bold tracking-wide px-4 py-1.5 rounded-full"
@@ -174,7 +236,9 @@ function EventCard({ event }: { event: PublicEvent }) {
                 {isFree ? "Free" : `From ${event.currency} ${minPrice.toLocaleString()}`}
               </span>
             )}
-            {!soldOut && fewLeft && (
+            {/* Active-state hype badges suppressed for past events — selling fast
+                / few left is meaningless once the event has happened. */}
+            {!isPast && !soldOut && fewLeft && (
               <span
                 className="text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
                 style={{ background: "rgba(225,112,85,0.12)", color: "#e17055", border: "1px solid rgba(225,112,85,0.22)" }}
@@ -182,7 +246,7 @@ function EventCard({ event }: { event: PublicEvent }) {
                 🔥 Few left
               </span>
             )}
-            {!soldOut && sellingFast && (
+            {!isPast && !soldOut && sellingFast && (
               <span
                 className="text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
                 style={{ background: "rgba(253,203,110,0.1)", color: "#fdcb6e", border: "1px solid rgba(253,203,110,0.18)" }}
@@ -198,17 +262,21 @@ function EventCard({ event }: { event: PublicEvent }) {
             </span>
             <span
               className="shrink-0 text-[11px] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 transition-all duration-200 group-hover:gap-2"
-              style={soldOut ? {
+              style={(isPast || soldOut) ? {
                 background: "rgba(255,255,255,0.05)",
-                color: "rgba(255,255,255,0.22)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                color:      "rgba(255,255,255,0.35)",
+                border:     "1px solid rgba(255,255,255,0.08)",
               } : {
                 background: `${accent}1a`,
-                color: accent,
-                border: `1px solid ${accent}38`,
+                color:      accent,
+                border:     `1px solid ${accent}38`,
               }}
             >
-              {soldOut ? "Sold out" : <><span>Get Tickets</span><ArrowRight className="w-3 h-3" /></>}
+              {isPast
+                ? <><span>View event</span><ArrowRight className="w-3 h-3" /></>
+                : soldOut
+                ? "Sold out"
+                : <><span>Get Tickets</span><ArrowRight className="w-3 h-3" /></>}
             </span>
           </div>
         </div>
@@ -264,8 +332,13 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
   const [category, setCategory] = useState("All");
   const [sortBy,   setSortBy]   = useState<"date" | "price-low" | "price-high" | "popular">("date");
 
-  const filtered = useMemo(() => {
-    let list = initialEvents.filter(e => {
+  // Filter (search + category) and split into upcoming + past. Past events
+  // are events that have FULLY ended (see isEventFullyOver). They're moved
+  // into a separate section at the bottom of the page rather than mixed
+  // into the main grid, where they'd otherwise appear first under
+  // "Soonest first" sort because their dates are smallest.
+  const { upcoming, past } = useMemo(() => {
+    const matchesFilters = (e: PublicEvent) => {
       if (query) {
         const q = query.toLowerCase();
         if (
@@ -276,26 +349,41 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
       }
       if (category !== "All" && e.category !== category) return false;
       return true;
-    });
+    };
 
+    const matched  = initialEvents.filter(matchesFilters);
+    const upcoming = matched.filter(e => !isEventFullyOver(e));
+    const past     = matched.filter(e =>  isEventFullyOver(e));
+
+    // Sort upcoming per user's chosen sort.
     if (sortBy === "date") {
-      list = [...list].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     } else if (sortBy === "price-low") {
-      list = [...list].sort((a, b) =>
+      upcoming.sort((a, b) =>
         Math.min(0, ...a.tiers.map(t => t.price)) - Math.min(0, ...b.tiers.map(t => t.price))
       );
     } else if (sortBy === "price-high") {
-      list = [...list].sort((a, b) =>
+      upcoming.sort((a, b) =>
         Math.max(0, ...b.tiers.map(t => t.price)) - Math.max(0, ...a.tiers.map(t => t.price))
       );
     } else if (sortBy === "popular") {
-      list = [...list].sort((a, b) => b.attendeeCount - a.attendeeCount);
+      upcoming.sort((a, b) => b.attendeeCount - a.attendeeCount);
     }
 
-    return list;
+    // Past events are always sorted most-recent-first regardless of the
+    // selected sort. The user's sort applies to "what to do next", not to
+    // archaeology — most recent past is the most relevant past.
+    past.sort((a, b) =>
+      new Date(b.endDate ?? b.date).getTime() - new Date(a.endDate ?? a.date).getTime()
+    );
+
+    return { upcoming, past };
   }, [initialEvents, query, category, sortBy]);
 
-  const upcomingCount = initialEvents.filter(e => e.date && new Date(e.date) >= new Date()).length;
+  // Hero badge count: only TRULY upcoming events (not past), regardless of
+  // current filter state. Uses isEventFullyOver for consistency with the
+  // grid split below.
+  const upcomingCount = initialEvents.filter(e => !isEventFullyOver(e)).length;
 
   return (
     <>
@@ -372,16 +460,19 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
         </div>
       </section>
 
-      {/* Results */}
-      <section className="px-4 sm:px-6 pb-24">
+      {/* Results — upcoming on top, past at the bottom in its own section */}
+      <section className="px-4 sm:px-6 pb-12">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <span className="text-[13px] text-white/35">
-              {filtered.length === 0
+              {upcoming.length === 0 && past.length === 0
                 ? "No events found"
-                : `${filtered.length} event${filtered.length !== 1 ? "s" : ""}${
-                    query ? ` for "${query}"` : category !== "All" ? ` in ${category}` : ""
-                  }`}
+                : (() => {
+                    const total = upcoming.length + past.length;
+                    return `${total} event${total !== 1 ? "s" : ""}${
+                      query ? ` for "${query}"` : category !== "All" ? ` in ${category}` : ""
+                    }${past.length > 0 ? ` · ${past.length} past` : ""}`;
+                  })()}
             </span>
             {(query || category !== "All") && (
               <button onClick={() => { setQuery(""); setCategory("All"); }}
@@ -391,14 +482,48 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.length === 0
-              ? <EmptyMarketplace />
-              : filtered.map(event => <EventCard key={event.id} event={event} />)
-            }
-          </div>
+          {/* Upcoming grid — empty state only shows when BOTH lists are empty */}
+          {upcoming.length === 0 && past.length === 0 ? (
+            <EmptyMarketplace />
+          ) : upcoming.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {upcoming.map(event => <EventCard key={event.id} event={event} />)}
+            </div>
+          ) : (
+            // Edge case: filter matches only past events. Show a soft note
+            // so the user knows their filter didn't match anything upcoming.
+            <div className="text-center py-12">
+              <p className="text-[13px] text-white/45">
+                No upcoming events match your search.
+                {past.length > 0 && " Past events matching your search are below."}
+              </p>
+            </div>
+          )}
         </div>
       </section>
+
+      {/* Past events section — only rendered when there's at least one */}
+      {past.length > 0 && (
+        <section className="px-4 sm:px-6 pb-20 pt-4 border-t border-white/[0.04]">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-baseline justify-between mb-5 mt-8">
+              <div>
+                <h2 className="font-heading font-bold text-[18px] sm:text-[20px] text-white/70 tracking-tight">
+                  Past events
+                </h2>
+                <p className="text-[12px] text-white/35 mt-1">
+                  {past.length} event{past.length !== 1 ? "s" : ""} that already happened.
+                  Recap or browse what you missed.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {past.map(event => <EventCard key={event.id} event={event} isPast />)}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Organiser CTA */}
       <section className="px-4 sm:px-6 pb-20">
