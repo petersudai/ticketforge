@@ -38,7 +38,7 @@ function ResendForm() {
       if (!res.ok && data.error) { setError(data.error); setLoading(false); return; }
       setDone(true);
     } catch {
-      setError("Network error — please try again.");
+      setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -90,11 +90,11 @@ function ResendForm() {
               onFocus={e => (e.target.style.borderColor = "rgba(108,92,231,0.6)")}
               onBlur={e  => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
             />
-            <p className="mt-1 text-[10px] text-white/25">Found in your confirmation email — starts with TF-</p>
+            <p className="mt-1 text-[10px] text-white/25">Found in your confirmation email. Starts with TF.</p>
           </div>
 
           <div>
-            <label className="block text-[11px] text-white/45 mb-1.5">Email <span className="text-white/25">(optional — for verification)</span></label>
+            <label className="block text-[11px] text-white/45 mb-1.5">Email <span className="text-white/25">(optional, for verification)</span></label>
             <input
               type="email" value={email} onChange={e => setEmail(e.target.value)}
               placeholder="The email you used at checkout"

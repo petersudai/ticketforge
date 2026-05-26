@@ -172,7 +172,7 @@ export default function TicketDownloadPage({
           </div>
           <h1 className="font-heading font-bold text-[22px] text-white mb-2">Ticket expired</h1>
           <p className="text-[14px] text-white/45 mb-6">
-            This ticket is no longer downloadable — the event has ended.
+            This ticket is no longer downloadable. The event has ended.
             Keep your ticket ID as a record.
           </p>
           <div className="font-mono text-[16px] text-brand-400 bg-brand-500/10 border border-brand-500/20 rounded-xl px-4 py-3 mb-6">
@@ -245,7 +245,7 @@ export default function TicketDownloadPage({
           <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2.5 mb-6">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span className="text-[13px] text-emerald-300 font-medium">
-              Ticket confirmed — you&apos;re registered for{" "}
+              Ticket confirmed. You&apos;re registered for{" "}
               <strong className="text-white">{event.name}</strong>!
               {tierCapacity > 1 ? ` Admits ${tierCapacity} people.` : ""}
             </span>
@@ -334,7 +334,7 @@ export default function TicketDownloadPage({
           style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
         >
           <p className="text-[11px] text-white/25 leading-relaxed">
-            No account required — this link is your ticket.
+            No account required. This link is your ticket.
             Bookmark it or save the email for easy access.
           </p>
         </div>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sign in — TicketForge Pro",
+  title: "Sign in · TicketForge Pro",
 };
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {

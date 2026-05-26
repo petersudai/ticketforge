@@ -368,7 +368,7 @@ export default function OrderConfirmationPage({
             <Ticket className="w-4 h-4 mt-0.5 shrink-0" style={{ color: accent }} />
             <p className="text-[12px] text-white/55 leading-relaxed">
               Each ticket link above opens an individual downloadable ticket with its own QR code.
-              Share them with each guest — every ticket can only be scanned once at the gate.
+              Share them with each guest. Every ticket can only be scanned once at the gate.
             </p>
           </div>
         )}
@@ -389,7 +389,7 @@ export default function OrderConfirmationPage({
             </p>
           ) : (
             <p className="text-[11px] text-white/25 leading-relaxed">
-              Bookmark this page — it&apos;s your permanent ticket link.
+              Bookmark this page. It&apos;s your permanent ticket link.
             </p>
           )}
         </div>

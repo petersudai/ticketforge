@@ -110,7 +110,7 @@ export default function LoginForm() {
         <h1 className="font-heading font-bold text-[24px] text-white mt-6 mb-1.5">
           Organizer Sign In
         </h1>
-        <p className="text-[13px] text-white/40">Welcome back — your events are waiting</p>
+        <p className="text-[13px] text-white/40">Welcome back. Your events are waiting.</p>
       </div>
 
       {/* Live demo CTA */}
@@ -124,7 +124,7 @@ export default function LoginForm() {
         </div>
         <div>
           <div className="text-[13px] font-semibold text-brand-300">Try the live demo</div>
-          <div className="text-[11px] text-white/35">6-step walkthrough — no signup needed</div>
+          <div className="text-[11px] text-white/35">6-step walkthrough. No signup needed.</div>
         </div>
         <div className="ml-auto text-[13px] text-brand-400 font-semibold">→</div>
       </a>
