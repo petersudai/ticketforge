@@ -265,12 +265,12 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
       } catch { /* continue polling */ }
     }
     setPayState("failed");
-    setPayMsg("Payment timed out. If you were charged, your ticket will be emailed shortly — contact support.");
+    setPayMsg("Payment timed out. If you were charged, your ticket will be emailed shortly. Contact support.");
   };
 
   const handleRegister = async () => {
     if (!form.name.trim())  { setPayMsg("Please enter your full name."); return; }
-    if (!form.email.trim()) { setPayMsg("Please enter your email address — your ticket will be sent here."); return; }
+    if (!form.email.trim()) { setPayMsg("Please enter your email address. Your ticket will be sent here."); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) { setPayMsg("Please enter a valid email address."); return; }
     if (!isFree && !form.phone.trim()) { setPayMsg("Please enter your M-Pesa phone number."); return; }
     if (eventSoldOut) { setPayMsg("This event is sold out"); return; }
@@ -334,7 +334,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
       if (!r.ok) { setPayState("failed"); setPayMsg(d.error || "Failed to initiate payment."); return; }
 
       setPayState("waiting");
-      setPayMsg("STK Push sent — check your phone and enter your M-Pesa PIN.");
+      setPayMsg("STK Push sent. Check your phone and enter your M-Pesa PIN.");
       await pollPaymentStatus(d.checkoutRequestId);
     } catch {
       setPayState("failed");
@@ -489,7 +489,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
                     </p>
                   : quantity > 1
                     ? <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
-                        {quantity} tickets — one QR code each
+                        {quantity} tickets, one QR code each
                       </p>
                     : null}
               </div>
@@ -518,7 +518,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
 
             {/* No account required notice */}
             <div style={{ background: "rgba(108,92,231,0.06)", border: "1px solid rgba(108,92,231,0.15)", borderRadius: 10, padding: "8px 12px", marginBottom: 14, fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
-              No account required — your ticket will be emailed to you instantly after registration.
+              No account required. Your ticket will be emailed to you instantly after registration.
             </div>
 
             <div className="reg-form-grid" style={{ marginBottom: 12 }}>
@@ -562,7 +562,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
 
                 {payState === "idle" && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                    {["Enter your M-Pesa registered phone number above", "Click the button below — an STK Push will appear on your phone", "Enter your M-Pesa PIN when prompted", "Your ticket arrives immediately after confirmation"].map((step, i) => (
+                    {["Enter your M-Pesa registered phone number above", "Click the button below. An STK Push will appear on your phone.", "Enter your M-Pesa PIN when prompted", "Your ticket arrives immediately after confirmation"].map((step, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                         <div style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(0,165,80,0.25)", border: "1px solid rgba(0,165,80,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#55efc4", flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
                         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>{step}</p>

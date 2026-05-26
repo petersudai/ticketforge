@@ -40,7 +40,7 @@ export default function TicketsPage() {
           description="Create an event first to preview its ticket design." />
       ) : (
         <Card>
-          <CardHeader><CardTitle>Ticket preview — {event.name}</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Ticket preview · {event.name}</CardTitle></CardHeader>
           <div className="flex justify-center py-4">
             <TicketPreview
               event={event}

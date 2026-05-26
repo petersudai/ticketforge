@@ -18,7 +18,7 @@ interface ResultState {
 }
 
 const IDLE: ResultState = {
-  type: "idle", icon: "—", name: "Waiting for scan…",
+  type: "idle", icon: "·", name: "Waiting for scan…",
   info: "Point camera at QR code or enter ticket ID below",
 };
 
@@ -270,7 +270,7 @@ export default function ScannerPage() {
           } else {
             const attempts = pinAttempts + 1;
             setPinAttempts(attempts);
-            setPinError(attempts >= 3 ? "Too many attempts — wait 30 seconds" : "Incorrect PIN");
+            setPinError(attempts >= 3 ? "Too many attempts. Wait 30 seconds." : "Incorrect PIN");
             if (attempts >= 3) {
               setPinLocked(true);
               setTimeout(() => { setPinLocked(false); setPinAttempts(0); setPinError(""); }, 30_000);
@@ -278,7 +278,7 @@ export default function ScannerPage() {
             setTimeout(() => setPinVal(""), 600);
           }
         } catch {
-          setPinError("Network error — try again");
+          setPinError("Network error. Try again.");
           setTimeout(() => setPinVal(""), 600);
         }
       }, 150);
@@ -443,7 +443,7 @@ export default function ScannerPage() {
           value={manualId}
           onChange={e => setManualId(e.target.value)}
           onKeyDown={e => e.key === "Enter" && handleManual()}
-          placeholder="Ticket ID — e.g. TF-ABCD-123456"
+          placeholder="Ticket ID, e.g. TF-ABCD-123456"
           style={{ flex: 1, padding: "8px 12px", borderRadius: 10, fontSize: 12, background: "rgba(255,255,255,0.05)", color: "#fff", border: "1px solid rgba(255,255,255,0.12)", outline: "none" }}
         />
         <button onClick={handleManual} style={{ padding: "8px 16px", borderRadius: 10, fontSize: 12, fontWeight: 500, background: "#6C5CE7", color: "#fff", border: "none", cursor: "pointer" }}>Verify</button>

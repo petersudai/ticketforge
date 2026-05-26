@@ -284,7 +284,7 @@ export default function EventsPage() {
         title={superAdmin ? "All events across the platform" : "Your events"}
         body={
           superAdmin
-            ? "You're viewing every event from every organisation on TicketForge. Groups are collapsible — click an org name to expand or hide its events. Use search to find an event by name, venue, or org."
+            ? "You're viewing every event from every organisation on TicketForge. Groups are collapsible. Click an org name to expand or hide its events. Use search to find an event by name, venue, or org."
             : "Every event you've created lives here. Click any event to edit its details, tiers, or settings. Use the search box to find one quickly when you have many."
         }
       />

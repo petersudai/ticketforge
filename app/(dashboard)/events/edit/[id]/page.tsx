@@ -200,11 +200,11 @@ function TierRow({
           <Edit2 className="w-3.5 h-3.5" />
         </button>
         <button onClick={async () => {
-          if (soldCount > 0) { toast.warning("Can't delete — tickets already sold. Hide it instead."); return; }
+          if (soldCount > 0) { toast.warning("Can't delete this tier. Tickets are already sold. Hide it instead."); return; }
           if (!confirm(`Delete "${tier.name}"?`)) return;
           await onDelete(tier.id);
         }}
-          title={soldCount > 0 ? "Can't delete — tickets sold. Hide instead." : "Delete"}
+          title={soldCount > 0 ? "Can't delete. Tickets are sold. Hide instead." : "Delete"}
           className="w-7 h-7 flex items-center justify-center rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/[0.05] transition-all">
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -317,7 +317,7 @@ function AddTierForm({ eventId, nextSort, currency, onAdded, onCancel }: {
       <label className="flex items-center gap-2 cursor-pointer select-none">
         <input type="checkbox" checked={form.hidden} onChange={e => setForm(f => ({ ...f, hidden: e.target.checked }))}
           className="w-3.5 h-3.5 accent-brand-500" />
-        <span className="text-[12px] text-white/50">Hidden (invite-only) — generates a secure share link</span>
+        <span className="text-[12px] text-white/50">Hidden (invite-only). Generates a secure share link.</span>
       </label>
       <div className="flex gap-2 justify-end">
         <button onClick={onCancel} className="px-3 py-1.5 rounded-lg text-[12px] text-white/50 hover:text-white hover:bg-white/[0.05] transition-all">Cancel</button>
@@ -734,7 +734,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 >
                   <div>
                     <p className={`text-[13px] font-semibold ${form.published ? "text-emerald-400" : "text-white/55"}`}>
-                      {form.published ? "Published — visible to public" : "Draft — hidden from marketplace"}
+                      {form.published ? "Published. Visible to public." : "Draft. Hidden from marketplace."}
                     </p>
                     <p className="text-[11px] text-white/35 mt-0.5">
                       {form.published

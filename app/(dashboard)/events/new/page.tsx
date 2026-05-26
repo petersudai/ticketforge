@@ -397,7 +397,7 @@ export default function NewEventPage() {
         <TipBubble
           id="event-form-welcome"
           title="Setting up an event"
-          body="Fill in the details below. Fields marked with * are required. The URL slug below auto-fills from the event name — you can edit it yourself any time. Everything can be changed later from your dashboard."
+          body="Fill in the details below. Fields marked with * are required. The URL slug below auto-fills from the event name, but you can edit it yourself any time. Everything can be changed later from your dashboard."
         />
       </div>
 
@@ -442,10 +442,10 @@ export default function NewEventPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Currency">
                 <Select value={form.currency} onChange={e => set("currency", e.target.value)}>
-                  <option value="KES">KES — Kenyan Shilling</option>
-                  <option value="USD">USD — US Dollar</option>
-                  <option value="UGX">UGX — Ugandan Shilling</option>
-                  <option value="TZS">TZS — Tanzanian Shilling</option>
+                  <option value="KES">KES · Kenyan Shilling</option>
+                  <option value="USD">USD · US Dollar</option>
+                  <option value="UGX">UGX · Ugandan Shilling</option>
+                  <option value="TZS">TZS · Tanzanian Shilling</option>
                 </Select>
               </Field>
               <Field label="Public URL slug"><Input placeholder="jazz-night-2025" value={form.slug} onChange={e => setSlug(e.target.value)} /></Field>

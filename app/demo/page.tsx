@@ -17,8 +17,8 @@ const STEPS = [
   { id: 1, label: "Dashboard",    icon: BarChart3,   hint: "Here's your live dashboard with 4 real events loaded." },
   { id: 2, label: "Event",        icon: Calendar,    hint: "Events have tiers, capacity tracking, and a public registration page." },
   { id: 3, label: "Attendees",    icon: Users,       hint: "Every attendee gets a unique QR ticket. Import via CSV or add manually." },
-  { id: 4, label: "M-Pesa",       icon: CreditCard,  hint: "Attendees pay with M-Pesa STK Push — ticket delivered instantly on confirm." },
-  { id: 5, label: "Scanner",      icon: QrCode,      hint: "Scan QR codes at the gate. Valid ✓ / Duplicate ⚠ / Invalid ✕ — instant." },
+  { id: 4, label: "M-Pesa",       icon: CreditCard,  hint: "Attendees pay with M-Pesa STK Push. Ticket delivered instantly on confirm." },
+  { id: 5, label: "Scanner",      icon: QrCode,      hint: "Scan QR codes at the gate. Get instant Valid ✓ / Duplicate ⚠ / Invalid ✕ feedback." },
   { id: 6, label: "Revenue",      icon: TrendingUp,  hint: "Revenue dashboard, tier breakdown, and M-Pesa transaction log." },
 ];
 
@@ -329,7 +329,7 @@ function StepScanner() {
       type = "invalid"; name = "Unknown ticket"; msg = `ID "${input}" not found`;
     } else if (attendee.checkedIn) {
       type = "duplicate"; name = attendee.name; tier = attendee.tier;
-      msg = "Already checked in — potential duplicate";
+      msg = "Already checked in. Potential duplicate.";
     } else {
       checkIn(event.id, attendee.ticketId);
       type = "valid"; name = attendee.name; tier = attendee.tier;
@@ -581,7 +581,7 @@ export default function DemoPage() {
             <Sparkles className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
             <div className="flex-1">
               <div className="text-[12px] font-semibold text-brand-300 mb-0.5">
-                Step {step + 1} of {STEPS.length} — {meta.label}
+                Step {step + 1} of {STEPS.length} · {meta.label}
               </div>
               <div className="text-[12px] text-white/50">{meta.hint}</div>
             </div>
@@ -599,7 +599,7 @@ export default function DemoPage() {
           <div>
             <h1 className="font-heading font-bold text-[20px] text-white">{meta.label}</h1>
             <div className="text-[12px] text-white/35">
-              {step + 1} / {STEPS.length} · Live preview — click anything
+              {step + 1} / {STEPS.length} · Live preview · click anything
             </div>
           </div>
         </div>

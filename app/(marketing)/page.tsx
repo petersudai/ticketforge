@@ -133,7 +133,7 @@ function Hero() {
         <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 text-[12px] text-emerald-400 font-semibold mb-8"
           style={{ animation: "fadeInUp 0.5s ease both" }}>
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-live-pulse" />
-          Now live — M-Pesa STK Push built in
+          Now live with M-Pesa STK Push built in
         </div>
 
         {/* Headline */}
@@ -146,7 +146,7 @@ function Hero() {
         {/* Sub */}
         <p className="text-[15px] sm:text-[18px] md:text-[20px] text-white/50 max-w-[600px] mx-auto leading-relaxed mb-10"
           style={{ animation: "fadeInUp 0.6s 0.22s ease both" }}>
-          The ticketing platform built for African events. M-Pesa payments, scannable QR tickets, and real-time check-in analytics — all in one place.
+          The ticketing platform built for African events. M-Pesa payments, scannable QR tickets, and real-time check-in analytics, all in one place.
         </p>
 
         {/* CTAs */}
@@ -316,7 +316,7 @@ const features = [
   {
     icon: Users,
     title: "Multi-tier ticketing",
-    desc: "Create Early Bird, General, VIP, VVIP tiers — each with its own price, quantity, and colour.",
+    desc: "Create Early Bird, General, VIP, and VVIP tiers, each with its own price, quantity, and colour.",
     color: "#55efc4",
     tag: "Tiers",
   },
@@ -330,7 +330,7 @@ const features = [
   {
     icon: TrendingUp,
     title: "Revenue dashboard",
-    desc: "Gross revenue, platform fees, net payout, M-Pesa transaction log — all in one financial overview.",
+    desc: "Gross revenue, platform fees, net payout, M-Pesa transaction log, all in one financial overview.",
     color: "#74b9ff",
     tag: "Revenue",
   },
@@ -342,7 +342,7 @@ function Features() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <SectionLabel>Everything you need</SectionLabel>
-          <SectionHeading sub="From ticket creation to post-event analytics — every tool in one platform, built for how African events actually work.">
+          <SectionHeading sub="From ticket creation to post-event analytics. Every tool in one platform, built for how African events actually work.">
             Built for <GradientText>serious event organisers</GradientText>
           </SectionHeading>
         </div>
@@ -391,9 +391,9 @@ function HowItWorks() {
 
   const attendeeSteps = [
     { n: "01", title: "Browse events", desc: "Discover events on the marketplace. Filter by category, date, and location." },
-    { n: "02", title: "Choose your ticket", desc: "Pick a tier that suits your budget — Early Bird, General, or VIP." },
+    { n: "02", title: "Choose your ticket", desc: "Pick a tier that suits your budget: Early Bird, General, or VIP." },
     { n: "03", title: "Pay with M-Pesa", desc: "Enter your phone number. An STK Push arrives instantly. Enter your PIN and you're done." },
-    { n: "04", title: "Get your ticket", desc: "Your QR ticket is emailed immediately. Show it at the door — no printing needed." },
+    { n: "04", title: "Get your ticket", desc: "Your QR ticket is emailed immediately. Show it at the door. No printing needed." },
   ];
 
   return (
@@ -477,8 +477,8 @@ function Pricing() {
   // event-form fee preview and the dashboard reveal the exact numbers
   // in context. The marketing page sells the value, not the spec sheet.
   const included = [
-    "Your first event is on us — zero commission on its ticket sales",
-    "Free events stay free — for you and your attendees, forever",
+    "Zero platform commission on your first event",
+    "Free events stay free, for you and your attendees, forever",
     "M-Pesa STK Push baked in, instant payouts to your number",
     "Unlimited events, tiers, tickets, scanners, and team members",
     "Real-time analytics, branded tickets, gate-scanner mobile app",
@@ -490,7 +490,7 @@ function Pricing() {
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12 md:mb-16">
           <SectionLabel>Honest pricing</SectionLabel>
-          <SectionHeading sub="No subscriptions. No setup fees. We only earn when you sell tickets — never before.">
+          <SectionHeading sub="No subscriptions. No setup fees. We only earn when you sell tickets.">
             Pay only when <GradientText>you earn</GradientText>
           </SectionHeading>
         </div>
@@ -523,10 +523,10 @@ function Pricing() {
 
               <p className="text-[13px] text-white/55 leading-relaxed mb-6">
                 That's it. The platform's job is to help you sell more tickets,
-                not to take a monthly rent whether you sell any or not.
+                not to collect rent whether you sell or not.
               </p>
 
-              {/* Single key differentiator — the cap */}
+              {/* Single key differentiator: the cap */}
               <div className="rounded-xl px-4 py-3 mb-7"
                 style={{ background: "rgba(85,239,196,0.08)", border: "1px solid rgba(85,239,196,0.18)" }}>
                 <div className="flex items-start gap-2.5">
@@ -534,8 +534,7 @@ function Pricing() {
                   <div>
                     <div className="text-[12px] font-semibold text-white mb-0.5">Premium tickets cost less here</div>
                     <div className="text-[12px] text-white/55 leading-relaxed">
-                      Our commission is capped per ticket — sell a KES 50,000 VIP
-                      table and we still take a fraction of what other platforms would.
+                      We charge a fixed maximum, no matter how high you price your VIP tickets.
                     </div>
                   </div>
                 </div>
@@ -546,7 +545,7 @@ function Pricing() {
                 className="mt-auto text-center py-3.5 rounded-[12px] text-[14px] font-semibold text-white bg-brand-500 hover:bg-brand-600 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
-                Start free — first event on us
+                Start free. First event on us.
               </Link>
             </div>
           </div>
@@ -585,7 +584,7 @@ function Pricing() {
             {[
               { price: "KES 1,500",  keep: "KES 1,425",  context: "Standard concert" },
               { price: "KES 5,000",  keep: "KES 4,750",  context: "Premium event" },
-              { price: "KES 50,000", keep: "KES 49,250", context: "VIP table — cap kicks in" },
+              { price: "KES 50,000", keep: "KES 49,250", context: "VIP table" },
             ].map(ex => (
               <div key={ex.price} className="text-center">
                 <div className="text-[10px] text-white/30 uppercase tracking-widest mb-2 font-heading">{ex.context}</div>
@@ -597,7 +596,7 @@ function Pricing() {
             ))}
           </div>
           <p className="text-center text-[11px] text-white/30 mt-5">
-            Safaricom M-Pesa transaction fees apply separately — same as any other M-Pesa-powered platform.
+            M-Pesa transaction fees apply separately.
           </p>
         </div>
 
@@ -617,7 +616,7 @@ function Pricing() {
 
 const testimonials = [
   {
-    quote: "We sold 800 tickets in 3 hours for our festival. The M-Pesa integration is seamless — attendees love how instant it is.",
+    quote: "We sold 800 tickets in 3 hours for our festival. The M-Pesa integration is seamless. Attendees love how instant it is.",
     name: "Wanjiru Kamau",
     role: "Festival Director, Nairobi",
     avatar: "WK",
@@ -713,14 +712,14 @@ function Benefits() {
               <Zap className="w-5 h-5 text-brand-400" />
             </div>
             <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] text-white mb-3">For organisers</h3>
-            <p className="text-[14px] text-white/45 mb-8 leading-relaxed">Everything you need to run a professional event — from setup to settlement.</p>
+            <p className="text-[14px] text-white/45 mb-8 leading-relaxed">Everything you need to run a professional event, from setup to settlement.</p>
             <div className="space-y-4">
               {[
-                ["Create events in minutes", "Name, venue, date, tiers — done in under 5 minutes."],
+                ["Create events in minutes", "Name, venue, date, tiers. Done in under 5 minutes."],
                 ["M-Pesa payments built in", "Collect payments instantly. No bank setup, no delays."],
                 ["Real-time check-in tracking", "See exactly who's arrived. Update your team live."],
                 ["Bulk ticket export", "Download all tickets as a single PDF before your event."],
-                ["Post-event revenue report", "Gross, fees, net payout — download as CSV."],
+                ["Post-event revenue report", "Gross, fees, net payout. Download as CSV."],
               ].map(([title, desc]) => (
                 <div key={title} className="flex gap-3">
                   <CheckCircle2 className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
@@ -801,10 +800,10 @@ const faqs = [
   { q: "How quickly do attendees receive their tickets?", a: "Immediately after M-Pesa payment clears (usually under 10 seconds). The ticket is emailed via EmailJS with a QR code and unique ticket ID." },
   { q: "Can I scan tickets without internet at the venue?", a: "The scanner works offline for previously loaded events. We recommend a strong mobile data connection for real-time check-in counts." },
   { q: "What happens if an attendee loses their ticket email?", a: "Each ticket has a unique ID. Organisers can look up any attendee by name or ID in the dashboard and verify manually." },
-  { q: "Is there a limit to how many ticket tiers I can create?", a: "No. Create as many tiers as needed — Early Bird, General, VIP, VVIP, Press, Student, Sponsor — each with its own price and quantity." },
+  { q: "Is there a limit to how many ticket tiers I can create?", a: "No. Create as many tiers as you need: Early Bird, General, VIP, VVIP, Press, Student, Sponsor. Each with its own price and quantity." },
   { q: "Can I refund tickets?", a: "Refunds are handled directly via M-Pesa's reversal API. We provide the transaction reference so you can process refunds from your Safaricom portal." },
   { q: "What file formats can I download tickets in?", a: "PNG (high-resolution, 3× retina) and PDF (A4 portrait, print-ready). Bulk export downloads all attendee tickets as a single multi-page PDF." },
-  { q: "Do you support events outside Kenya?", a: "Yes — we support KES, USD, UGX, and TZS. M-Pesa covers Kenya, Tanzania, Uganda, and DRC. Stripe and other gateways can be added." },
+  { q: "Do you support events outside Kenya?", a: "Yes. We support KES, USD, UGX, and TZS. M-Pesa covers Kenya, Tanzania, Uganda, and DRC. Stripe and other gateways can be added." },
 ];
 
 function FAQ() {
