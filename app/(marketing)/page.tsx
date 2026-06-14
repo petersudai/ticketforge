@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MarketingNav } from "@/components/marketing/Nav";
 import { MarketingFooter } from "@/components/marketing/Footer";
+import { DiscoverEvents } from "@/components/marketing/DiscoverEvents";
 import {
   Play,
   Zap, QrCode, BarChart3, Mail, Globe, Shield,
@@ -919,6 +920,7 @@ export default function HomePage() {
       <HowItWorks />
       <Stats />
       <Benefits />
+      <DiscoverEvents />
       <Pricing />
       <Testimonials />
       <FAQ />

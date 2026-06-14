@@ -14,6 +14,7 @@
 
 import { use, useState, useEffect } from "react";
 import { MarketingNav } from "@/components/marketing/Nav";
+import { EventMiniCard, type MiniEvent } from "@/components/marketing/EventMiniCard";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -89,6 +90,17 @@ function formatDate(d: string) {
   try {
     return new Date(d).toLocaleDateString("en-KE", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
   } catch { return d; }
+}
+
+// Whole-day "is this event still upcoming?" check (matches marketplace logic).
+// Used to keep the "more events like this" strip to upcoming events only.
+function isUpcomingEvent(ev: { date?: string; endDate?: string | null }): boolean {
+  const day = ev.endDate ?? ev.date;
+  if (!day) return false;
+  const now = new Date();
+  const todayStr =
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return day >= todayStr;
 }
 
 // "Fri 10 May" — no timezone drift (uses local constructor)
@@ -182,6 +194,12 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
   const [payState,  setPayState]  = useState<"idle"|"initiating"|"waiting"|"confirmed"|"failed">("idle");
   const [payMsg,    setPayMsg]    = useState("");
 
+  // Two-step registration: 1 = your details, 2 = payment/confirm.
+  const [step,      setStep]      = useState<1 | 2>(1);
+
+  // "More events like this" — same-category upcoming events, excluding self.
+  const [similar,   setSimilar]   = useState<MiniEvent[]>([]);
+
   // ── Fetch event from public API (pass invite token if present) ─────
   useEffect(() => {
     const token = typeof window !== "undefined"
@@ -201,6 +219,25 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  // ── Fetch similar (same-category) upcoming events ──────────────────
+  // Best-effort: any failure just leaves the strip empty, never blocks the page.
+  useEffect(() => {
+    if (!event?.category || !event?.id) { setSimilar([]); return; }
+    let cancelled = false;
+    fetch(`/api/public/events?category=${encodeURIComponent(event.category)}`)
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error("similar fetch failed"))))
+      .then((data: any[]) => {
+        if (cancelled) return;
+        const list = (Array.isArray(data) ? data : [])
+          .filter(e => e.id !== event.id)
+          .filter(isUpcomingEvent)
+          .slice(0, 4);
+        setSimilar(list);
+      })
+      .catch(() => { if (!cancelled) setSimilar([]); });
+    return () => { cancelled = true; };
+  }, [event?.category, event?.id]);
 
   if (loading) return <Skeleton />;
 
@@ -343,6 +380,33 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
     }
   };
 
+  // ── Step 1 → Step 2 gate ──────────────────────────────────────────
+  // Validates only the buyer-detail fields (same rules handleRegister
+  // re-checks on submit, so this is a friendly early gate, not the only
+  // line of defence).
+  const validateDetails = (): string | null => {
+    if (!form.name.trim())  return "Please enter your full name.";
+    if (!form.email.trim()) return "Please enter your email address. Your ticket will be sent here.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return "Please enter a valid email address.";
+    if (!isFree && !form.phone.trim()) return "Please enter your M-Pesa phone number.";
+    return null;
+  };
+
+  const goToPayment = () => {
+    const err = validateDetails();
+    if (err) { setPayMsg(err); return; }
+    setPayMsg("");
+    setStep(2);
+  };
+
+  const backToDetails = () => {
+    // Don't allow stepping back mid-payment.
+    if (payState === "initiating" || payState === "waiting") return;
+    setPayState("idle");
+    setPayMsg("");
+    setStep(1);
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: "#06060e", color: "#f0f0f8", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
 
@@ -383,6 +447,29 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
       {/* ── Body ────────────────────────────────────────────────── */}
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 clamp(1rem, 4vw, 2rem) 4rem" }}>
 
+        {/* Step indicator — shown only when the event is purchasable */}
+        {!eventSoldOut && visibleTiers.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            {([{ n: 1, label: "Your details" }, { n: 2, label: "Payment" }] as const).map((s, idx) => (
+              <div key={s.n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 11, fontWeight: 700,
+                  background: step >= s.n ? "#6C5CE7" : "rgba(255,255,255,0.08)",
+                  color: step >= s.n ? "#fff" : "rgba(255,255,255,0.4)",
+                  border: step >= s.n ? "none" : "1px solid rgba(255,255,255,0.12)",
+                }}>{s.n}</div>
+                <span style={{ fontSize: 12, fontWeight: 600, color: step >= s.n ? "#fff" : "rgba(255,255,255,0.35)" }}>{s.label}</span>
+                {idx === 0 && <div style={{ width: 28, height: 1, background: "rgba(255,255,255,0.12)" }} />}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ─────────── STEP 1: select tier, quantity, your details ─────────── */}
+        {step === 1 && (
+        <>
         <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
           Select a ticket tier
         </p>
@@ -548,30 +635,74 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
               </div>
             </div>
 
+            {payMsg && (
+              <div style={{ fontSize: 12, color: "#ff7675", marginBottom: 10 }}>{payMsg}</div>
+            )}
+
+            <button
+              onClick={goToPayment}
+              disabled={!tier}
+              style={{
+                width: "100%", padding: "13px", borderRadius: 12, fontSize: 14,
+                fontWeight: 600, fontFamily: "'Syne',sans-serif", border: "none",
+                cursor: "pointer", background: "#6C5CE7", color: "#fff", transition: "all 0.2s",
+              }}
+            >
+              {isFree ? "Continue →" : "Continue to payment →"}
+            </button>
+          </div>
+        )}
+        </>
+        )}
+
+        {/* ─────────── STEP 2: review & pay ─────────── */}
+        {step === 2 && !eventSoldOut && visibleTiers.length > 0 && (
+        <>
+          {/* Order summary */}
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: "1.25rem 1.5rem", marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <h3 style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 700 }}>Review &amp; pay</h3>
+              <button
+                onClick={backToDetails}
+                disabled={payState === "initiating" || payState === "waiting"}
+                style={{
+                  background: "none", border: "none",
+                  color: payState === "initiating" || payState === "waiting" ? "rgba(255,255,255,0.2)" : "#a29cf4",
+                  fontSize: 12, cursor: payState === "initiating" || payState === "waiting" ? "not-allowed" : "pointer",
+                  fontFamily: "'DM Sans',sans-serif", padding: 0,
+                }}
+              >← Edit details</button>
+            </div>
+            {([
+              ["Event", event.name],
+              ["Ticket", tier?.name ?? "—"],
+              ["Quantity", tier && tier.capacity > 1 ? `${quantity} (${quantity * tier.capacity} passes)` : `${quantity}`],
+              ...(!isFree ? [["Phone", form.phone]] : []),
+            ] as [string, string][]).map(([label, value]) => (
+              <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13, marginBottom: 8 }}>
+                <span style={{ color: "rgba(255,255,255,0.4)" }}>{label}</span>
+                <span style={{ color: "#fff", fontWeight: 500, textAlign: "right", wordBreak: "break-word" }}>{value}</span>
+              </div>
+            ))}
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 6, paddingTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Total</span>
+              <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: "#55efc4" }}>
+                {isFree ? "Free" : `${event.currency} ${totalPrice.toLocaleString()}`}
+              </span>
+            </div>
+          </div>
+
+          {/* Payment card */}
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: "1.5rem" }}>
             {/* M-Pesa info */}
             {!isFree && (
               <div style={{ background: "rgba(0,165,80,0.07)", border: "1px solid rgba(0,165,80,0.2)", borderRadius: 12, padding: "1rem", marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>Pay via</span>
-                  <span style={{ background: "#00A550", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>M-PESA</span>
-                  <div style={{ marginLeft: "auto", textAlign: "right" }}>
-                    <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, color: "#55efc4", fontSize: 16 }}>
-                      {event.currency} {totalPrice.toLocaleString()}
-                    </span>
-                    {quantity > 1 && (
-                      <span style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)" }}>
-                        {quantity} × {event.currency} {tier?.price.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
                 {payState === "idle" && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                    {["Enter your M-Pesa registered phone number above", "Click the button below. An STK Push will appear on your phone.", "Enter your M-Pesa PIN when prompted", "Your ticket arrives immediately after confirmation"].map((step, i) => (
+                    {["We'll send the STK Push to the number you entered.", "Tap the button below to start the payment.", "Enter your M-Pesa PIN when prompted.", "Your ticket arrives immediately after confirmation."].map((instruction, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                         <div style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(0,165,80,0.25)", border: "1px solid rgba(0,165,80,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#55efc4", flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
-                        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>{step}</p>
+                        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>{instruction}</p>
                       </div>
                     ))}
                   </div>
@@ -627,6 +758,22 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
               Secure · Powered by Safaricom M-Pesa · Instant confirmation
             </p>
           </div>
+        </>
+        )}
+
+        {/* ─────────── More events like this ─────────── */}
+        {similar.length > 0 && (
+          <div style={{ marginTop: 40, paddingTop: 28, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: 17, fontWeight: 700, color: "#fff", marginBottom: 4 }}>
+              More events like this
+            </h2>
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 18 }}>
+              Other {event.category} events you might like.
+            </p>
+            <div className="similar-grid">
+              {similar.map(ev => <EventMiniCard key={ev.id} event={ev} />)}
+            </div>
+          </div>
         )}
       </div>
 
@@ -635,6 +782,8 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
         input:focus { border-color: rgba(108,92,231,0.6) !important; box-shadow: 0 0 0 3px rgba(108,92,231,0.12); }
         .reg-form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
         @media (min-width: 500px) { .reg-form-grid { grid-template-columns: 1fr 1fr; } }
+        .similar-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        @media (min-width: 900px) { .similar-grid { grid-template-columns: repeat(4, 1fr); } }
       `}</style>
     </div>
   );
