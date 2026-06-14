@@ -12,7 +12,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/events":      "Events",
   "/attendees":   "Attendees",
   "/tickets":     "Tickets",
-  "/email":       "Email",
+  "/email":       "Announcements",
   "/public-page": "Public Page",
   "/revenue":     "Revenue",
   "/analytics":   "Analytics",

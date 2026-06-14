@@ -13,6 +13,7 @@
  */
 
 import { use, useState, useEffect } from "react";
+import { MarketingNav } from "@/components/marketing/Nav";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -345,9 +346,14 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
   return (
     <div style={{ minHeight: "100vh", background: "#06060e", color: "#f0f0f8", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
 
+      {/* Shared marketing nav so buyers can get back to the marketplace and
+          browse other events. The nav is fixed (64px); the hero's top padding
+          below is bumped to clear it. */}
+      <MarketingNav />
+
       {/* ── Hero ────────────────────────────────────────────────── */}
       <div style={{
-        position: "relative", padding: "clamp(1.5rem, 5vw, 5rem) clamp(1rem, 4vw, 2rem) 3rem", overflow: "hidden",
+        position: "relative", padding: "clamp(6rem, 9vw, 8rem) clamp(1rem, 4vw, 2rem) 3rem", overflow: "hidden",
         background: event.bgImage
           ? `linear-gradient(to bottom, rgba(6,6,14,0.3), #06060e), url(${event.bgImage}) center/cover`
           : `linear-gradient(135deg, ${event.accent}18, ${event.accent}06)`,

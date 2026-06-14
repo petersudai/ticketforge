@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useEvents } from "@/lib/hooks/useEvents";
 import { TicketPreview } from "@/components/shared/TicketPreview";
-import { Card, CardHeader, CardTitle, Select, EmptyState } from "@/components/ui";
-import { Ticket, Loader2 } from "lucide-react";
+import { Card, CardHeader, CardTitle, Select, Button, EmptyState } from "@/components/ui";
+import { Ticket, Loader2, Plus } from "lucide-react";
 
 export default function TicketsPage() {
   const { events, loading } = useEvents();
@@ -36,8 +37,17 @@ export default function TicketsPage() {
       </div>
 
       {!event ? (
-        <EmptyState icon={Ticket} title="No events yet"
-          description="Create an event first to preview its ticket design." />
+        <Card>
+          <EmptyState icon={Ticket} title="No events yet"
+            description="Create your first event to design and preview its tickets." />
+          <div className="flex justify-center mt-3">
+            <Link href="/events/new">
+              <Button variant="primary" size="sm">
+                <Plus className="w-3.5 h-3.5" /> Create event
+              </Button>
+            </Link>
+          </div>
+        </Card>
       ) : (
         <Card>
           <CardHeader><CardTitle>Ticket preview · {event.name}</CardTitle></CardHeader>

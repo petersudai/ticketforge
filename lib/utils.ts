@@ -63,3 +63,66 @@ export function slugify(str: string): string {
 export function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
+
+/**
+ * Time format helpers.
+ *
+ * Events store their time as a human-readable display string ("7:00 PM"),
+ * which is what every display surface (event page, order page, marketplace,
+ * tickets, emails) renders directly. To let organisers pick a time with a
+ * native <input type="time"> (which speaks 24-hour "HH:MM") WITHOUT changing
+ * the stored format, we convert at the form boundary:
+ *
+ *   • to24Hour("7:00 PM") -> "19:00"   (display string -> input value)
+ *   • to12Hour("19:00")   -> "7:00 PM" (input value -> stored display string)
+ *
+ * Both are tolerant: unparseable input returns "" rather than throwing, so a
+ * legacy or malformed value never crashes a form or wipes data silently.
+ */
+
+/** "19:00" -> "7:00 PM". Returns "" for invalid input. */
+export function to12Hour(hhmm: string): string {
+  const m = /^(\d{1,2}):(\d{2})$/.exec((hhmm ?? "").trim());
+  if (!m) return "";
+  let h = parseInt(m[1], 10);
+  const min = m[2];
+  if (h < 0 || h > 23 || parseInt(min, 10) > 59) return "";
+  const period = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${min} ${period}`;
+}
+
+/**
+ * "7:00 PM" -> "19:00" for a native <input type="time">.
+ * Accepts both 12-hour ("7:00 PM") and already-24-hour ("19:00") inputs.
+ * Returns "" if it can't confidently parse (caller keeps the original value).
+ */
+export function to24Hour(display: string): string {
+  const s = (display ?? "").trim();
+  if (!s) return "";
+
+  // 12-hour with AM/PM (most specific) — try first.
+  const twelve = /^(\d{1,2}):(\d{2})\s*([AaPp][Mm])$/.exec(s);
+  if (twelve) {
+    let h = parseInt(twelve[1], 10);
+    const min = twelve[2];
+    const period = twelve[3].toUpperCase();
+    if (h < 1 || h > 12 || parseInt(min, 10) > 59) return "";
+    if (period === "PM" && h !== 12) h += 12;
+    if (period === "AM" && h === 12) h = 0;
+    return `${String(h).padStart(2, "0")}:${min}`;
+  }
+
+  // Already 24-hour "HH:MM".
+  const direct = /^(\d{1,2}):(\d{2})$/.exec(s);
+  if (direct) {
+    const h = parseInt(direct[1], 10);
+    const min = parseInt(direct[2], 10);
+    if (h >= 0 && h <= 23 && min <= 59) {
+      return `${String(h).padStart(2, "0")}:${direct[2]}`;
+    }
+  }
+
+  return "";
+}
