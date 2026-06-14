@@ -69,8 +69,8 @@ export default function EmailPage() {
     <div className="p-4 md:p-6 max-w-6xl mx-auto animate-fade-in space-y-5">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-heading font-bold text-[22px] tracking-tight">Email</h1>
-          <p className="text-[12px] text-[#5a5a72] mt-1">Send tickets and notifications to attendees</p>
+          <h1 className="font-heading font-bold text-[22px] tracking-tight">Announcements</h1>
+          <p className="text-[12px] text-[#5a5a72] mt-1">Send tickets and broadcast updates to your attendees</p>
         </div>
       </div>
 

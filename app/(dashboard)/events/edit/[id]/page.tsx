@@ -10,7 +10,7 @@ import {
   Textarea, Field, Badge, StatCard, EmptyState,
 } from "@/components/ui";
 import { toast } from "@/lib/toast";
-import { formatDate, slugify } from "@/lib/utils";
+import { formatDate, slugify, to12Hour, to24Hour } from "@/lib/utils";
 import { CATEGORIES, normalizeCategory } from "@/lib/constants/categories";
 import { getSupabaseClient } from "@/lib/supabase";
 import {
@@ -761,13 +761,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     <Input type="date" value={form.date ?? ""} onChange={e => setForm((f: any) => ({ ...f, date: e.target.value }))} />
                   </Field>
                   <Field label="Start time">
-                    <Input value={form.time ?? ""} onChange={e => setForm((f: any) => ({ ...f, time: e.target.value }))} placeholder="7:00 PM" />
+                    <Input type="time" value={to24Hour(form.time ?? "")} onChange={e => setForm((f: any) => ({ ...f, time: to12Hour(e.target.value) }))} />
                   </Field>
                   <Field label="End date">
                     <Input type="date" value={form.endDate ?? ""} onChange={e => setForm((f: any) => ({ ...f, endDate: e.target.value }))} />
                   </Field>
                   <Field label="End time">
-                    <Input value={form.endTime ?? ""} onChange={e => setForm((f: any) => ({ ...f, endTime: e.target.value }))} placeholder="10:00 PM" />
+                    <Input type="time" value={to24Hour(form.endTime ?? "")} onChange={e => setForm((f: any) => ({ ...f, endTime: to12Hour(e.target.value) }))} />
                   </Field>
                 </div>
 
@@ -829,9 +829,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </Card>
 
-            {/* ③ Background Image / Branding — bottom */}
+            {/* ③ Cover Image / Branding — bottom */}
             <Card>
-              <CardHeader><CardTitle>Background image</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Cover image</CardTitle></CardHeader>
               <div className="space-y-3">
                 {form.bgImage ? (
                   <div className="relative rounded-xl overflow-hidden h-36 border border-white/[0.08]">

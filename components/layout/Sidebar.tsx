@@ -19,7 +19,7 @@ const ALL_NAV_ITEMS = [
   { href: "/events",      label: "Events",       icon: CalendarDays },
   { href: "/attendees",   label: "Attendees",    icon: Users },
   { href: "/tickets",     label: "Tickets",      icon: Ticket },
-  { href: "/email",       label: "Email",        icon: Mail },
+  { href: "/email",       label: "Announcements", icon: Mail },
   { href: "/public-page", label: "Public Page",  icon: Globe },
   { href: "/revenue",     label: "Revenue",      icon: TrendingUp },
   { href: "/analytics",   label: "Analytics",    icon: BarChart3 },

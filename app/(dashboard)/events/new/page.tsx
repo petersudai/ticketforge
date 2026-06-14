@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, Button, Input, Select, Textarea, Field } f
 import { TipBubble } from "@/components/ui/TipBubble";
 import { toast } from "@/lib/toast";
 import { aggregateFees, PRICING } from "@/lib/fees";
-import { slugify, formatDate } from "@/lib/utils";
+import { slugify, formatDate, to12Hour, to24Hour } from "@/lib/utils";
 import { Plus, Trash2, Upload, Save, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tier } from "@/store/useStore";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -425,9 +425,11 @@ export default function NewEventPage() {
             </Field>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Field label="Start date *"><Input type="date" value={form.date} onChange={e => set("date", e.target.value)} /></Field>
-              <Field label="Start time *"><Input placeholder="7:00 PM" value={form.time} onChange={e => set("time", e.target.value)} /></Field>
+              {/* Native time pickers avoid typos. We store the friendly
+                  "7:00 PM" display string so all read surfaces stay unchanged. */}
+              <Field label="Start time *"><Input type="time" value={to24Hour(form.time)} onChange={e => set("time", to12Hour(e.target.value))} /></Field>
               <Field label="End date"><Input type="date" value={form.endDate} onChange={e => set("endDate", e.target.value)} /></Field>
-              <Field label="End time"><Input placeholder="10:00 PM" value={form.endTime} onChange={e => set("endTime", e.target.value)} /></Field>
+              <Field label="End time"><Input type="time" value={to24Hour(form.endTime)} onChange={e => set("endTime", to12Hour(e.target.value))} /></Field>
             </div>
             <Field label="Venue *"><Input placeholder="e.g. KICC, Nairobi" value={form.venue} onChange={e => set("venue", e.target.value)} /></Field>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -518,18 +520,18 @@ export default function NewEventPage() {
           <FeePreviewCard tiers={tiers} currency={form.currency} />
 
           <Card>
-            <CardHeader><CardTitle>Background image</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Cover image</CardTitle></CardHeader>
             <label className="relative block border-2 border-dashed border-white/[0.1] rounded-xl p-5 text-center cursor-pointer hover:border-brand-500/50 transition-colors group">
               <input type="file" accept="image/*" onChange={handleBg} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
               {bgImage ? (
-                <img src={bgImage} alt="bg" className="w-full h-20 object-cover rounded-lg" />
+                <img src={bgImage} alt="cover" className="w-full h-20 object-cover rounded-lg" />
               ) : (
                 <div>
                   <div className="w-9 h-9 bg-brand-500/10 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:bg-brand-500/20 transition-colors">
                     <Upload className="w-4 h-4 text-brand-400" />
                   </div>
                   <p className="text-[12px] text-[#9898b0]"><strong className="text-[#f0f0f8]">Click to upload</strong></p>
-                  <p className="text-[11px] text-[#5a5a72] mt-1">PNG, JPG up to 2 MB</p>
+                  <p className="text-[11px] text-[#5a5a72] mt-1">Used as your event's hero background and marketplace thumbnail. PNG or JPG, landscape works best, up to 2 MB.</p>
                 </div>
               )}
             </label>
