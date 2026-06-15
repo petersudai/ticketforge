@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { ToastViewport } from "@/components/ui/ToastViewport";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "TicketForge Pro — Event Ticketing Platform",
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               etc. dispatched from any component reach this renderer. */}
           <ToastViewport />
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
