@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   CheckCircle2, Ticket, Zap, Calendar, MapPin,
   Download, ArrowRight,
@@ -274,7 +275,7 @@ export default function OrderConfirmationPage({
           {/* Hero strip */}
           {event.bgImage ? (
             <div className="h-[100px] relative overflow-hidden">
-              <img src={event.bgImage} alt={event.name} className="w-full h-full object-cover" style={{ opacity: 0.5 }} />
+              <Image src={event.bgImage} alt={event.name} fill sizes="(min-width: 560px) 560px, 100vw" className="object-cover" style={{ opacity: 0.5 }} />
               <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(15,15,22,0.95) 100%)" }} />
             </div>
           ) : (

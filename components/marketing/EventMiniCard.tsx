@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { MapPin, Calendar, ArrowRight } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -55,10 +56,12 @@ export function EventMiniCard({ event }: { event: MiniEvent }) {
           style={{ background: event.bgImage ? undefined : `linear-gradient(135deg, ${accent}28, ${accent}08)` }}
         >
           {event.bgImage && (
-            <img
+            <Image
               src={event.bgImage}
               alt={event.name}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+              fill
+              sizes="(min-width: 900px) 25vw, 50vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
               style={{ opacity: 0.82 }}
             />
           )}
