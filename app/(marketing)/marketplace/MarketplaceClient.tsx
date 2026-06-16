@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { MarketingNav } from "@/components/marketing/Nav";
 import { MarketingFooter } from "@/components/marketing/Footer";
 import {
@@ -123,10 +124,12 @@ function EventCard({ event, isPast = false }: { event: PublicEvent; isPast?: boo
           }}
         >
           {event.bgImage && (
-            <img
+            <Image
               src={event.bgImage}
               alt={event.name}
-              className="w-full h-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+              fill
+              sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+              className="object-cover object-center transition-transform duration-500 ease-out group-hover:scale-[1.04]"
               style={{ opacity: 0.82, willChange: "transform" }}
             />
           )}

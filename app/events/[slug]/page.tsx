@@ -13,6 +13,7 @@
  */
 
 import { use, useState, useEffect } from "react";
+import Image from "next/image";
 import { MarketingNav } from "@/components/marketing/Nav";
 import { EventMiniCard, type MiniEvent } from "@/components/marketing/EventMiniCard";
 
@@ -418,11 +419,24 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
       {/* ── Hero ────────────────────────────────────────────────── */}
       <div style={{
         position: "relative", padding: "clamp(6rem, 9vw, 8rem) clamp(1rem, 4vw, 2rem) 3rem", overflow: "hidden",
-        background: event.bgImage
-          ? `linear-gradient(to bottom, rgba(6,6,14,0.3), #06060e), url(${event.bgImage}) center/cover`
-          : `linear-gradient(135deg, ${event.accent}18, ${event.accent}06)`,
+        background: event.bgImage ? "#06060e" : `linear-gradient(135deg, ${event.accent}18, ${event.accent}06)`,
       }}>
-        <div style={{ maxWidth: 680, margin: "0 auto" }}>
+        {/* Optimized hero image (next/image). priority = it's the LCP element.
+            Decorative (alt="") since the event name is rendered in the h1 below. */}
+        {event.bgImage && (
+          <>
+            <Image
+              src={event.bgImage}
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              style={{ objectFit: "cover", objectPosition: "center", zIndex: 0 }}
+            />
+            <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "linear-gradient(to bottom, rgba(6,6,14,0.3), #06060e)" }} />
+          </>
+        )}
+        <div style={{ position: "relative", zIndex: 2, maxWidth: 680, margin: "0 auto" }}>
           {event.category && (
             <div style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: event.accent, background: `${event.accent}18`, padding: "3px 10px", borderRadius: 20, marginBottom: 12 }}>
               {event.category}
