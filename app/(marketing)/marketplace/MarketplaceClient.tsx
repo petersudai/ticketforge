@@ -217,13 +217,13 @@ function EventCard({ event, isPast = false }: { event: PublicEvent; isPast?: boo
 
           <div className="flex flex-col gap-1 mb-3">
             {event.venue && (
-              <div className="flex items-center gap-1.5 text-[11px] text-white/45">
+              <div className="flex items-center gap-1.5 text-[11px] text-white/55">
                 <MapPin className="w-3 h-3 shrink-0" />
                 <span className="truncate">{event.venue}</span>
               </div>
             )}
             {dateLine && (
-              <div className="flex items-center gap-1.5 text-[11px] text-white/38">
+              <div className="flex items-center gap-1.5 text-[11px] text-white/50">
                 <Calendar className="w-3 h-3 shrink-0" />
                 <span>{dateLine}</span>
               </div>
@@ -260,7 +260,7 @@ function EventCard({ event, isPast = false }: { event: PublicEvent; isPast?: boo
           </div>
 
           <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t border-white/[0.06]">
-            <span className="text-[10px] text-white/28 truncate">
+            <span className="text-[10px] text-white/50 truncate">
               {event.organizer || "TicketForge"}
             </span>
             <span
@@ -314,10 +314,10 @@ function EmptyMarketplace() {
   return (
     <div className="col-span-full text-center py-20">
       <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto mb-4">
-        <Ticket className="w-8 h-8 text-white/20" />
+        <Ticket className="w-8 h-8 text-white/50" />
       </div>
       <h3 className="font-heading font-bold text-[18px] text-white mb-2">No events found</h3>
-      <p className="text-[13px] text-white/35">Try a different search or browse all categories.</p>
+      <p className="text-[13px] text-white/50">Try a different search or browse all categories.</p>
     </div>
   );
 }
@@ -392,6 +392,8 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
     <>
       <MarketingNav />
 
+      <main>
+
       {/* Hero */}
       <section className="relative pt-[96px] pb-10 px-4 sm:px-6 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none"
@@ -409,7 +411,7 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
                 WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
               }}>events near you</span>
             </h1>
-            <p className="text-[16px] text-white/45 max-w-[480px] mx-auto leading-relaxed">
+            <p className="text-[16px] text-white/55 max-w-[480px] mx-auto leading-relaxed">
               Browse events, pick your tier, and pay with M-Pesa in seconds. Your QR ticket arrives instantly.
             </p>
           </div>
@@ -417,19 +419,19 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
           {/* Search + sort */}
           <div className="flex flex-col sm:flex-row gap-3 max-w-3xl mx-auto">
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
               <input
                 type="text"
                 aria-label="Search events"
                 placeholder="Search events, venues, organisers…"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl text-[13px] text-white placeholder:text-white/30 outline-none"
+                className="w-full pl-10 pr-4 py-3 rounded-xl text-[13px] text-white placeholder:text-white/50 outline-none"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
               />
               {query && (
                 <button onClick={() => setQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/60">
                   <X className="w-4 h-4" />
                 </button>
               )}
@@ -468,8 +470,12 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
       {/* Results — upcoming on top, past at the bottom in its own section */}
       <section className="px-4 sm:px-6 pb-12">
         <div className="max-w-7xl mx-auto">
+          {/* Screen-reader-only section heading: gives the upcoming event cards
+              (h3) a parent h2 under the page h1, so the heading outline is
+              sequential. Visually hidden; no layout change. */}
+          <h2 className="sr-only">Upcoming events</h2>
           <div className="flex items-center justify-between mb-6">
-            <span className="text-[13px] text-white/35">
+            <span className="text-[13px] text-white/50">
               {upcoming.length === 0 && past.length === 0
                 ? "No events found"
                 : (() => {
@@ -498,7 +504,7 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
             // Edge case: filter matches only past events. Show a soft note
             // so the user knows their filter didn't match anything upcoming.
             <div className="text-center py-12">
-              <p className="text-[13px] text-white/45">
+              <p className="text-[13px] text-white/55">
                 No upcoming events match your search.
                 {past.length > 0 && " Past events matching your search are below."}
               </p>
@@ -516,7 +522,7 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
                 <h2 className="font-heading font-bold text-[18px] sm:text-[20px] text-white/70 tracking-tight">
                   Past events
                 </h2>
-                <p className="text-[12px] text-white/35 mt-1">
+                <p className="text-[12px] text-white/50 mt-1">
                   {past.length} event{past.length !== 1 ? "s" : ""} that already happened.
                   Recap or browse what you missed.
                 </p>
@@ -542,7 +548,7 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
           >
             <div>
               <h3 className="font-heading font-extrabold text-[20px] sm:text-[24px] text-white mb-2">Hosting an event?</h3>
-              <p className="text-[14px] text-white/45">Create your event in minutes and start selling tickets with M-Pesa today.</p>
+              <p className="text-[14px] text-white/55">Create your event in minutes and start selling tickets with M-Pesa today.</p>
             </div>
             <Link
               href="/auth/signup"
@@ -553,6 +559,8 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
           </div>
         </div>
       </section>
+
+      </main>
 
       <MarketingFooter />
     </>

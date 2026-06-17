@@ -41,7 +41,7 @@ function AccountMenu({ user }: { user: SupabaseUser }) {
         <span className="text-[13px] text-white/80 font-medium max-w-[110px] truncate hidden sm:block">
           {name.split(" ")[0]}
         </span>
-        <ChevronDown className={`w-3.5 h-3.5 text-white/40 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-white/55 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
@@ -51,7 +51,7 @@ function AccountMenu({ user }: { user: SupabaseUser }) {
             style={{ background: "#111118", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" }}>
             <div className="px-3 py-2.5 border-b border-white/[0.07] mb-1">
               <div className="text-[12px] font-semibold text-white truncate">{name}</div>
-              <div className="text-[10px] text-white/35 mt-0.5 capitalize">{role}</div>
+              <div className="text-[10px] text-white/50 mt-0.5 capitalize">{role}</div>
             </div>
             <Link href="/dashboard" onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-white/70 hover:text-white hover:bg-white/[0.04] transition-all">
