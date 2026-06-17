@@ -169,7 +169,7 @@ function Hero() {
         </div>
 
         {/* Social proof */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-[13px] text-white/35"
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-[13px] text-white/50"
           style={{ animation: "fadeInUp 0.6s 0.44s ease both" }}>
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -199,7 +199,7 @@ function Hero() {
               {["#ff5f57","#febc2e","#28c840"].map(c => <div key={c} className="w-3 h-3 rounded-full" style={{ background: c }} />)}
             </div>
             <div className="flex-1 mx-4">
-              <div className="bg-white/[0.06] rounded-md px-3 py-1 text-[11px] text-white/30 text-center max-w-[240px] mx-auto">
+              <div className="bg-white/[0.06] rounded-md px-3 py-1 text-[11px] text-white/50 text-center max-w-[240px] mx-auto">
                 ticketforge.app/dashboard
               </div>
             </div>
@@ -213,7 +213,7 @@ function Hero() {
               { label: "Pending pay", value: "KES 24K", up: "8 events", color: "#fdcb6e" },
             ].map(s => (
               <div key={s.label} className="rounded-xl p-3.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                <div className="text-[10px] text-white/35 mb-2 uppercase tracking-wider font-heading">{s.label}</div>
+                <div className="text-[10px] text-white/50 mb-2 uppercase tracking-wider font-heading">{s.label}</div>
                 <div className="font-heading font-bold text-[18px] text-white mb-1" style={{ color: s.color }}>{s.value}</div>
                 <div className="text-[10px] text-emerald-400">{s.up}</div>
               </div>
@@ -222,7 +222,7 @@ function Hero() {
           {/* Events table — hidden on mobile to avoid overflow; visible sm+ */}
           <div className="hidden sm:block px-5 pb-5">
             <div className="rounded-xl overflow-hidden border border-white/[0.06]">
-              <div className="grid grid-cols-6 px-4 py-2.5 bg-white/[0.03] border-b border-white/[0.05] text-[10px] text-white/30 uppercase tracking-wider font-heading">
+              <div className="grid grid-cols-6 px-4 py-2.5 bg-white/[0.03] border-b border-white/[0.05] text-[10px] text-white/50 uppercase tracking-wider font-heading">
                 {["Event", "Date", "Attendees", "Revenue", "Status", ""].map(h => <div key={h}>{h}</div>)}
               </div>
               {[
@@ -232,11 +232,11 @@ function Hero() {
               ].map(r => (
                 <div key={r.name} className="grid grid-cols-6 px-4 py-3 border-b border-white/[0.04] text-[12px] hover:bg-white/[0.02] transition-colors">
                   <div className="text-white font-medium">{r.name}</div>
-                  <div className="text-white/40">{r.date}</div>
+                  <div className="text-white/55">{r.date}</div>
                   <div className="text-white/60">{r.att}</div>
                   <div className="text-emerald-400 font-medium">{r.rev}</div>
                   <div><span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold">{r.status}</span></div>
-                  <div className="text-white/20 text-right">→</div>
+                  <div className="text-white/50 text-right">→</div>
                 </div>
               ))}
             </div>
@@ -256,10 +256,10 @@ function TrustBar() {
   return (
     <section className="py-16 border-y border-white/[0.05]">
       <div className="max-w-5xl mx-auto px-6">
-        <p className="text-center text-[12px] text-white/25 uppercase tracking-widest font-heading mb-8">Powered by trusted technology</p>
+        <p className="text-center text-[12px] text-white/50 uppercase tracking-widest font-heading mb-8">Powered by trusted technology</p>
         <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
           {logos.map(l => (
-            <div key={l} className="text-[13px] font-semibold text-white/20 hover:text-white/40 transition-colors font-heading tracking-tight">
+            <div key={l} className="text-[13px] font-semibold text-white/50 hover:text-white/55 transition-colors font-heading tracking-tight">
               {l}
             </div>
           ))}
@@ -365,10 +365,10 @@ function Features() {
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${f.color}18` }}>
                       <Icon className="w-5 h-5" style={{ color: f.color }} />
                     </div>
-                    <span className="text-[10px] font-semibold text-white/25 tracking-widest font-heading">{f.tag}</span>
+                    <span className="text-[10px] font-semibold text-white/50 tracking-widest font-heading">{f.tag}</span>
                   </div>
                   <h3 className="font-heading font-bold text-[16px] text-white mb-2">{f.title}</h3>
-                  <p className="text-[13px] text-white/45 leading-relaxed">{f.desc}</p>
+                  <p className="text-[13px] text-white/55 leading-relaxed">{f.desc}</p>
                 </div>
               </div>
               </Reveal>
@@ -428,7 +428,7 @@ function HowItWorks() {
                     </div>
                     <div className="pb-6">
                       <div className="font-heading font-bold text-[14px] text-white mb-1">{s.title}</div>
-                      <div className="text-[13px] text-white/45 leading-relaxed">{s.desc}</div>
+                      <div className="text-[13px] text-white/55 leading-relaxed">{s.desc}</div>
                     </div>
                   </div>
                 </Reveal>
@@ -456,7 +456,7 @@ function HowItWorks() {
                     </div>
                     <div className="pb-6">
                       <div className="font-heading font-bold text-[14px] text-white mb-1">{s.title}</div>
-                      <div className="text-[13px] text-white/45 leading-relaxed">{s.desc}</div>
+                      <div className="text-[13px] text-white/55 leading-relaxed">{s.desc}</div>
                     </div>
                   </div>
                 </Reveal>
@@ -519,7 +519,7 @@ function Pricing() {
 
               <div className="flex items-baseline gap-2 mb-3">
                 <span className="font-heading font-extrabold text-[60px] sm:text-[72px] text-white leading-none tracking-tight">5%</span>
-                <span className="text-[14px] text-white/45">per paid ticket</span>
+                <span className="text-[14px] text-white/55">per paid ticket</span>
               </div>
 
               <p className="text-[13px] text-white/55 leading-relaxed mb-6">
@@ -559,7 +559,7 @@ function Pricing() {
               border:     "1px solid rgba(255,255,255,0.07)",
             }}
           >
-            <div className="text-[11px] font-heading font-bold text-white/30 uppercase tracking-widest mb-5">
+            <div className="text-[11px] font-heading font-bold text-white/50 uppercase tracking-widest mb-5">
               What's included
             </div>
 
@@ -578,7 +578,7 @@ function Pricing() {
             M-Pesa transaction fees are footnoted as Safaricom's (they are). */}
         <div className="mt-8 rounded-2xl px-5 py-5 sm:px-7 sm:py-6"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
-          <div className="text-[11px] font-heading font-bold text-white/30 uppercase tracking-widest mb-5 text-center">
+          <div className="text-[11px] font-heading font-bold text-white/50 uppercase tracking-widest mb-5 text-center">
             What you take home on real ticket sizes
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
@@ -588,21 +588,21 @@ function Pricing() {
               { price: "KES 50,000", keep: "KES 49,250", context: "VIP table" },
             ].map(ex => (
               <div key={ex.price} className="text-center">
-                <div className="text-[10px] text-white/30 uppercase tracking-widest mb-2 font-heading">{ex.context}</div>
-                <div className="text-[12px] text-white/45 mb-1.5">Sell {ex.price}</div>
+                <div className="text-[10px] text-white/50 uppercase tracking-widest mb-2 font-heading">{ex.context}</div>
+                <div className="text-[12px] text-white/55 mb-1.5">Sell {ex.price}</div>
                 <div className="font-heading font-bold text-[20px] sm:text-[22px] text-emerald-400 leading-tight">
                   You take home<br />{ex.keep}
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-center text-[11px] text-white/30 mt-5">
+          <p className="text-center text-[11px] text-white/50 mt-5">
             M-Pesa transaction fees apply separately.
           </p>
         </div>
 
         {/* Enterprise / volume invitation */}
-        <p className="text-center text-[13px] text-white/40 mt-8">
+        <p className="text-center text-[13px] text-white/55 mt-8">
           Running large-scale events or selling at serious volume?{" "}
           <a href="mailto:hello@ticketforge.app" className="text-brand-400 hover:text-brand-300 font-medium">
             Let's talk →
@@ -688,7 +688,7 @@ function Testimonials() {
                   </div>
                   <div>
                     <div className="text-[13px] font-semibold text-white">{t.name}</div>
-                    <div className="text-[11px] text-white/35">{t.role}</div>
+                    <div className="text-[11px] text-white/50">{t.role}</div>
                   </div>
                 </div>
               </div>
@@ -713,7 +713,7 @@ function Benefits() {
               <Zap className="w-5 h-5 text-brand-400" />
             </div>
             <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] text-white mb-3">For organisers</h3>
-            <p className="text-[14px] text-white/45 mb-8 leading-relaxed">Everything you need to run a professional event, from setup to settlement.</p>
+            <p className="text-[14px] text-white/55 mb-8 leading-relaxed">Everything you need to run a professional event, from setup to settlement.</p>
             <div className="space-y-4">
               {[
                 ["Create events in minutes", "Name, venue, date, tiers. Done in under 5 minutes."],
@@ -726,7 +726,7 @@ function Benefits() {
                   <CheckCircle2 className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
                   <div>
                     <div className="text-[13px] font-semibold text-white">{title}</div>
-                    <div className="text-[12px] text-white/40 mt-0.5">{desc}</div>
+                    <div className="text-[12px] text-white/55 mt-0.5">{desc}</div>
                   </div>
                 </div>
               ))}
@@ -742,7 +742,7 @@ function Benefits() {
               <Ticket className="w-5 h-5 text-emerald-400" />
             </div>
             <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] text-white mb-3">For attendees</h3>
-            <p className="text-[14px] text-white/45 mb-8 leading-relaxed">A smooth, fast, trustworthy way to get your ticket and enjoy the event.</p>
+            <p className="text-[14px] text-white/55 mb-8 leading-relaxed">A smooth, fast, trustworthy way to get your ticket and enjoy the event.</p>
             <div className="space-y-4">
               {[
                 ["Pay with M-Pesa in seconds", "No bank card needed. Just your phone and your PIN."],
@@ -755,7 +755,7 @@ function Benefits() {
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <div>
                     <div className="text-[13px] font-semibold text-white">{title}</div>
-                    <div className="text-[12px] text-white/40 mt-0.5">{desc}</div>
+                    <div className="text-[12px] text-white/55 mt-0.5">{desc}</div>
                   </div>
                 </div>
               ))}
@@ -785,7 +785,7 @@ function Stats() {
           ].map((s, i) => (
             <Reveal key={s.label} delay={i * 90}>
               <div className="font-heading font-extrabold text-[24px] sm:text-[26px] md:text-[28px] lg:text-[32px] xl:text-[36px] tracking-tight mb-1.5 whitespace-nowrap" style={{ color: s.color }}>{s.value}</div>
-              <div className="text-[11px] sm:text-[13px] text-white/35 leading-snug">{s.label}</div>
+              <div className="text-[11px] sm:text-[13px] text-white/50 leading-snug">{s.label}</div>
             </Reveal>
           ))}
         </div>
@@ -833,7 +833,7 @@ function FAQ() {
               >
                 <span className="text-[14px] font-semibold text-white pr-4">{faq.q}</span>
                 <ChevronDown
-                  className="w-4 h-4 text-white/40 shrink-0 transition-transform duration-200"
+                  className="w-4 h-4 text-white/55 shrink-0 transition-transform duration-200"
                   style={{ transform: open === i ? "rotate(180deg)" : "none" }}
                 />
               </button>
@@ -866,7 +866,7 @@ function FinalCTA() {
             <h2 className="font-heading font-extrabold text-[28px] sm:text-[36px] md:text-[48px] tracking-tight leading-[1.05] text-white mb-4">
               Ready to sell your<br /><GradientText>first ticket?</GradientText>
             </h2>
-            <p className="text-[14px] sm:text-[16px] text-white/45 mb-8 sm:mb-10 leading-relaxed">
+            <p className="text-[14px] sm:text-[16px] text-white/55 mb-8 sm:mb-10 leading-relaxed">
               Join hundreds of Kenyan event organisers. Set up your event in minutes, share your link, and start collecting M-Pesa payments.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -914,17 +914,22 @@ export default function HomePage() {
       <PageStyles />
       <Suspense fallback={null}><ScrollWatcher /></Suspense>
       <MarketingNav />
-      <Hero />
-      <TrustBar />
-      <Features />
-      <HowItWorks />
-      <Stats />
-      <Benefits />
-      <DiscoverEvents />
-      <Pricing />
-      <Testimonials />
-      <FAQ />
-      <FinalCTA />
+      {/* <main> landmark: lets assistive tech jump straight to primary content
+          (Nav renders <header>, Footer renders <footer>, so this completes the
+          header/main/footer landmark structure). */}
+      <main>
+        <Hero />
+        <TrustBar />
+        <Features />
+        <HowItWorks />
+        <Stats />
+        <Benefits />
+        <DiscoverEvents />
+        <Pricing />
+        <Testimonials />
+        <FAQ />
+        <FinalCTA />
+      </main>
       <MarketingFooter />
     </>
   );
