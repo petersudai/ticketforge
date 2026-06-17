@@ -90,13 +90,13 @@ export function EventMiniCard({ event }: { event: MiniEvent }) {
           </h3>
           <div className="flex flex-col gap-1 mb-3">
             {event.date && (
-              <div className="flex items-center gap-1.5 text-[11px] text-white/40">
+              <div className="flex items-center gap-1.5 text-[11px] text-white/55">
                 <Calendar className="w-3 h-3 shrink-0" />
                 <span className="truncate">{formatDate(event.date)}{event.time ? `, ${event.time}` : ""}</span>
               </div>
             )}
             {event.venue && (
-              <div className="flex items-center gap-1.5 text-[11px] text-white/40">
+              <div className="flex items-center gap-1.5 text-[11px] text-white/55">
                 <MapPin className="w-3 h-3 shrink-0" />
                 <span className="truncate">{event.venue}</span>
               </div>

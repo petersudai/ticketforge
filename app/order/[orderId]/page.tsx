@@ -121,7 +121,7 @@ function TicketRow({ attendee, index, accent }: { attendee: OrderAttendee; index
         </div>
         <div className="min-w-0">
           <p className="text-[13px] font-semibold text-white truncate">{attendee.name}</p>
-          <p className="font-mono text-[11px] text-white/35 truncate">{attendee.ticketId}</p>
+          <p className="font-mono text-[11px] text-white/50 truncate">{attendee.ticketId}</p>
         </div>
       </div>
 
@@ -225,7 +225,7 @@ export default function OrderConfirmationPage({
             <Ticket className="w-8 h-8 text-red-400" />
           </div>
           <h1 className="font-heading font-bold text-[22px] text-white mb-2">Order not found</h1>
-          <p className="text-[14px] text-white/45 mb-6">
+          <p className="text-[14px] text-white/55 mb-6">
             We couldn't find this order. Check your confirmation email for the correct link.
           </p>
           <Link href="/marketplace" className="text-[13px] text-brand-400 hover:text-brand-300">
@@ -297,7 +297,7 @@ export default function OrderConfirmationPage({
                 </span>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-[11px] text-white/30 mb-0.5">
+                <p className="text-[11px] text-white/50 mb-0.5">
                   {multi ? `${ticketCount} tickets` : "1 ticket"}
                 </p>
                 <p className="font-heading font-bold text-[16px]" style={{ color: isFree ? "#55efc4" : accent }}>
@@ -308,13 +308,13 @@ export default function OrderConfirmationPage({
 
             <div className="flex flex-col gap-1.5">
               {event.date && (
-                <div className="flex items-center gap-2 text-[12px] text-white/45">
+                <div className="flex items-center gap-2 text-[12px] text-white/55">
                   <Calendar className="w-3.5 h-3.5 shrink-0" />
                   <span>{dateTimeLine}</span>
                 </div>
               )}
               {event.venue && (
-                <div className="flex items-center gap-2 text-[12px] text-white/45">
+                <div className="flex items-center gap-2 text-[12px] text-white/55">
                   <MapPin className="w-3.5 h-3.5 shrink-0" />
                   <span>{event.venue}</span>
                 </div>
@@ -326,7 +326,7 @@ export default function OrderConfirmationPage({
                 className="mt-3 pt-3 border-t flex items-center justify-between text-[11px]"
                 style={{ borderColor: "rgba(255,255,255,0.07)" }}
               >
-                <span className="text-white/30">M-Pesa receipt</span>
+                <span className="text-white/50">M-Pesa receipt</span>
                 <span className="font-mono text-white/55">{order.mpesaReceiptNumber}</span>
               </div>
             )}
@@ -336,11 +336,11 @@ export default function OrderConfirmationPage({
         {/* ── Tickets list ───────────────────────────────────────────── */}
         <div className="mb-5">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-[11px] font-bold text-white/30 uppercase tracking-widest">
+            <p className="text-[11px] font-bold text-white/50 uppercase tracking-widest">
               Your tickets ({ticketCount})
             </p>
             {multi && (
-              <p className="text-[11px] text-white/25">Each has a unique QR code</p>
+              <p className="text-[11px] text-white/50">Each has a unique QR code</p>
             )}
           </div>
 
@@ -380,16 +380,16 @@ export default function OrderConfirmationPage({
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}
         >
           {attendees[0]?.email ? (
-            <p className="text-[11px] text-white/25 leading-relaxed">
+            <p className="text-[11px] text-white/50 leading-relaxed">
               {emailSent ? "✓ Confirmation sent to " : "Sending confirmation to "}
-              <span className="text-white/45">{attendees[0].email}</span>.
+              <span className="text-white/55">{attendees[0].email}</span>.
               <br />Can&apos;t find it?{" "}
               <Link href={`/resend-ticket?ticketId=${attendees[0].ticketId}`} className="text-brand-400 hover:text-brand-300">
                 Resend email →
               </Link>
             </p>
           ) : (
-            <p className="text-[11px] text-white/25 leading-relaxed">
+            <p className="text-[11px] text-white/50 leading-relaxed">
               Bookmark this page. It&apos;s your permanent ticket link.
             </p>
           )}
@@ -397,12 +397,12 @@ export default function OrderConfirmationPage({
 
         {/* ── Event link ─────────────────────────────────────────────── */}
         <div className="flex items-center justify-between">
-          <Link href="/marketplace" className="text-[12px] text-white/30 hover:text-white/60 transition-colors">
+          <Link href="/marketplace" className="text-[12px] text-white/50 hover:text-white/60 transition-colors">
             ← Browse more events
           </Link>
           <Link
             href={`/events/${event.slug}`}
-            className="flex items-center gap-1 text-[12px] text-white/30 hover:text-white/60 transition-colors"
+            className="flex items-center gap-1 text-[12px] text-white/50 hover:text-white/60 transition-colors"
           >
             Event page <ArrowRight className="w-3 h-3" />
           </Link>

@@ -68,7 +68,7 @@ function ResendForm() {
           <Mail className="w-7 h-7 text-brand-400" />
         </div>
         <h1 className="font-heading font-bold text-[22px] text-white mb-1.5">Resend my ticket</h1>
-        <p className="text-[13px] text-white/40">Enter your ticket ID and we'll email it again. No account needed.</p>
+        <p className="text-[13px] text-white/55">Enter your ticket ID and we'll email it again. No account needed.</p>
       </div>
 
       <div className="rounded-2xl p-6" style={{ background: "rgba(17,17,24,0.95)", border: "1px solid rgba(255,255,255,0.07)" }}>
@@ -81,7 +81,7 @@ function ResendForm() {
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-[11px] text-white/45 mb-1.5">Ticket ID <span className="text-brand-400">*</span></label>
+            <label className="block text-[11px] text-white/55 mb-1.5">Ticket ID <span className="text-brand-400">*</span></label>
             <input
               type="text" required value={ticketId}
               onChange={e => setTicketId(e.target.value.toUpperCase())}
@@ -90,11 +90,11 @@ function ResendForm() {
               onFocus={e => (e.target.style.borderColor = "rgba(108,92,231,0.6)")}
               onBlur={e  => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
             />
-            <p className="mt-1 text-[10px] text-white/25">Found in your confirmation email. Starts with TF.</p>
+            <p className="mt-1 text-[10px] text-white/50">Found in your confirmation email. Starts with TF.</p>
           </div>
 
           <div>
-            <label className="block text-[11px] text-white/45 mb-1.5">Email <span className="text-white/25">(optional, for verification)</span></label>
+            <label className="block text-[11px] text-white/55 mb-1.5">Email <span className="text-white/50">(optional, for verification)</span></label>
             <input
               type="email" value={email} onChange={e => setEmail(e.target.value)}
               placeholder="The email you used at checkout"
@@ -113,13 +113,13 @@ function ResendForm() {
         </form>
 
         <div className="mt-4 rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
-          <p className="text-[11px] text-white/25 text-center leading-relaxed">
-            Your ticket link never expires. Bookmark <span className="text-white/40 font-mono">ticketforge.app/ticket/[ID]</span> for instant access.
+          <p className="text-[11px] text-white/50 text-center leading-relaxed">
+            Your ticket link never expires. Bookmark <span className="text-white/55 font-mono">ticketforge.app/ticket/[ID]</span> for instant access.
           </p>
         </div>
       </div>
 
-      <p className="text-center text-[12px] text-white/25 mt-5">
+      <p className="text-center text-[12px] text-white/50 mt-5">
         Just browsing?{" "}
         <Link href="/marketplace" className="text-brand-400 hover:text-brand-300">Browse events →</Link>
       </p>

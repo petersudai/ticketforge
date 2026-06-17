@@ -171,7 +171,7 @@ export default function TicketDownloadPage({
             <AlertTriangle className="w-8 h-8 text-amber-400" />
           </div>
           <h1 className="font-heading font-bold text-[22px] text-white mb-2">Ticket expired</h1>
-          <p className="text-[14px] text-white/45 mb-6">
+          <p className="text-[14px] text-white/55 mb-6">
             This ticket is no longer downloadable. The event has ended.
             Keep your ticket ID as a record.
           </p>
@@ -196,11 +196,11 @@ export default function TicketDownloadPage({
             <Ticket className="w-8 h-8 text-red-400" />
           </div>
           <h1 className="font-heading font-bold text-[22px] text-white mb-2">Ticket not found</h1>
-          <p className="text-[14px] text-white/45 mb-2">
+          <p className="text-[14px] text-white/55 mb-2">
             We couldn&apos;t find ticket{" "}
             <span className="font-mono text-white/70">{ticketId}</span>.
           </p>
-          <p className="text-[13px] text-white/30 mb-6">
+          <p className="text-[13px] text-white/50 mb-6">
             Check your confirmation email for your ticket ID and download link.
           </p>
           <Link href="/marketplace" className="text-[13px] text-brand-400 hover:text-brand-300">
@@ -278,7 +278,7 @@ export default function TicketDownloadPage({
               <div className="text-[13px] font-semibold text-white">
                 {downloading === "png" ? "Saving…" : "Save as image"}
               </div>
-              <div className="text-[11px] text-white/35">PNG · Best for phones</div>
+              <div className="text-[11px] text-white/50">PNG · Best for phones</div>
             </div>
           </button>
 
@@ -293,7 +293,7 @@ export default function TicketDownloadPage({
               <div className="text-[13px] font-semibold text-white">
                 {downloading === "pdf" ? "Saving…" : "Save as PDF"}
               </div>
-              <div className="text-[11px] text-white/35">PDF · Print-ready A4</div>
+              <div className="text-[11px] text-white/50">PDF · Print-ready A4</div>
             </div>
           </button>
         </div>
@@ -310,14 +310,14 @@ export default function TicketDownloadPage({
           }
         </button>
 
-        <p className="text-center text-[11px] text-white/20 leading-relaxed">
+        <p className="text-center text-[11px] text-white/50 leading-relaxed">
           You can re-download this ticket any time before the event ends.<br />
-          Ticket ID: <span className="font-mono text-white/35">{ticketId}</span>
+          Ticket ID: <span className="font-mono text-white/50">{ticketId}</span>
         </p>
 
         {/* Resend ticket */}
         <div className="mt-4 pt-4 border-t border-white/[0.06] text-center">
-          <p className="text-[11px] text-white/25 mb-2">
+          <p className="text-[11px] text-white/50 mb-2">
             Can't find your ticket email?
           </p>
           <a
@@ -333,7 +333,7 @@ export default function TicketDownloadPage({
           className="mt-4 rounded-xl px-4 py-3 text-center"
           style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
         >
-          <p className="text-[11px] text-white/25 leading-relaxed">
+          <p className="text-[11px] text-white/50 leading-relaxed">
             No account required. This link is your ticket.
             Bookmark it or save the email for easy access.
           </p>
