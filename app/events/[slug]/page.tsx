@@ -806,7 +806,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 18 }}>
               Other {event.category} events you might like.
             </p>
-            <div className="similar-grid">
+            <div className="grid grid-cols-2 gap-3.5">
               {similar.map(ev => <EventMiniCard key={ev.id} event={ev} />)}
             </div>
           </div>
@@ -818,8 +818,6 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
         input:focus { border-color: rgba(108,92,231,0.6) !important; box-shadow: 0 0 0 3px rgba(108,92,231,0.12); }
         .reg-form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
         @media (min-width: 500px) { .reg-form-grid { grid-template-columns: 1fr 1fr; } }
-        .similar-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-        @media (min-width: 900px) { .similar-grid { grid-template-columns: repeat(4, 1fr); } }
       `}</style>
     </div>
   );

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Calendar, ArrowRight } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { catStyle } from "@/lib/constants/categories";
 
 /**
  * components/marketing/EventMiniCard.tsx
@@ -41,11 +42,12 @@ function fromPriceLabel(ev: MiniEvent): string {
 }
 
 export function EventMiniCard({ event }: { event: MiniEvent }) {
-  const accent = event.accent ?? "#6C5CE7";
-  const price  = fromPriceLabel(event);
+  const accent  = event.accent ?? "#6C5CE7";
+  const price   = fromPriceLabel(event);
+  const catCs   = catStyle(event.category);
 
   return (
-    <Link href={`/events/${event.slug}`} className="group block">
+    <Link href={`/events/${event.slug}`} className="group block h-full">
       <div
         className="rounded-2xl overflow-hidden border border-white/[0.07] transition-all duration-300 group-hover:border-white/[0.18] group-hover:-translate-y-[2px] h-full flex flex-col"
         style={{ background: "rgba(15,15,22,0.9)" }}
@@ -70,11 +72,11 @@ export function EventMiniCard({ event }: { event: MiniEvent }) {
               <span
                 className="text-[10px] font-bold px-2 py-0.5 rounded-full leading-none"
                 style={{
-                  background: "rgba(0,0,0,0.55)",
+                  background: "rgba(0,0,0,0.58)",
                   backdropFilter: "blur(10px)",
                   WebkitBackdropFilter: "blur(10px)",
-                  color: "#fff",
-                  border: "1px solid rgba(255,255,255,0.2)",
+                  color: catCs.text,
+                  border: `1px solid ${catCs.text}38`,
                 }}
               >
                 {event.category}
