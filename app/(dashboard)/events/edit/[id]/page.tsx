@@ -10,6 +10,7 @@ import {
   Textarea, Field, Badge, StatCard, EmptyState,
 } from "@/components/ui";
 import { toast } from "@/lib/toast";
+import { VenuePicker } from "@/components/maps/VenuePicker";
 import { formatDate, slugify, to12Hour, to24Hour } from "@/lib/utils";
 import { CATEGORIES, normalizeCategory } from "@/lib/constants/categories";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -409,6 +410,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     endTime:     form.endTime || null,
     endDate:     form.endDate || null,
     venue:       form.venue || null,
+    latitude:    form.latitude ?? null,
+    longitude:   form.longitude ?? null,
     category:    form.category || null,
     description: form.description || null,
     organizer:   form.organizer || null,
@@ -773,6 +776,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
                 <Field label="Venue">
                   <Input value={form.venue ?? ""} onChange={e => setForm((f: any) => ({ ...f, venue: e.target.value }))} />
+                </Field>
+
+                <Field label="Pin location on map (optional)">
+                  <VenuePicker
+                    venue={form.venue ?? ""}
+                    latitude={form.latitude ?? null}
+                    longitude={form.longitude ?? null}
+                    onCoordsChange={({ latitude, longitude }) => setForm((f: any) => ({ ...f, latitude, longitude }))}
+                    accent={form.accent ?? "#6C5CE7"}
+                  />
                 </Field>
 
                 <Field label="Category">

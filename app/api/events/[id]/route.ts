@@ -21,6 +21,8 @@ const PatchEventSchema = z.object({
   endTime:     z.string().max(20).nullable().optional(),
   endDate:     z.string().nullable().optional(),
   venue:       z.string().nullable().optional(),
+  latitude:    z.number().min(-90).max(90).nullable().optional(),
+  longitude:   z.number().min(-180).max(180).nullable().optional(),
   organizer:   z.string().nullable().optional(),
   category:    z.string().nullable().optional(),
   description: z.string().nullable().optional(),

@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, Button, Input, Select, Textarea, Field } f
 import { TipBubble } from "@/components/ui/TipBubble";
 import { toast } from "@/lib/toast";
 import { aggregateFees, PRICING } from "@/lib/fees";
+import { VenuePicker } from "@/components/maps/VenuePicker";
 import { slugify, formatDate, to12Hour, to24Hour } from "@/lib/utils";
 import { Plus, Trash2, Upload, Save, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tier } from "@/store/useStore";
@@ -230,6 +231,8 @@ export default function NewEventPage() {
   const [bgImage, setBgImage] = useState<string | null>(null);
   const [tiers,   setTiers]   = useState<any[]>([newTier(TIER_PRESETS[1])]);
   const [errors,  setErrors]  = useState<string[]>([]);
+  // Optional map coordinates for the venue (set via the VenuePicker).
+  const [coords, setCoords] = useState<{ latitude: number | null; longitude: number | null }>({ latitude: null, longitude: null });
   // Tracks whether the user has manually typed in the slug field.
   // While false, the slug auto-follows the event name. Once true, we stop
   // touching it — the user has taken ownership of the slug value.
@@ -356,6 +359,8 @@ export default function NewEventPage() {
           capacity:  form.capacity ? parseInt(form.capacity) : null,
           slug:      form.slug || slugify(form.name) || undefined,
           published: true,
+          latitude:  coords.latitude,
+          longitude: coords.longitude,
           tiers:     tiers.map((t, i) => ({ ...t, sortOrder: i })),
           bgImage:   bgImage?.startsWith("http") ? bgImage : undefined,
         }),
@@ -432,6 +437,15 @@ export default function NewEventPage() {
               <Field label="End time"><Input type="time" value={to24Hour(form.endTime)} onChange={e => set("endTime", to12Hour(e.target.value))} /></Field>
             </div>
             <Field label="Venue *"><Input placeholder="e.g. KICC, Nairobi" value={form.venue} onChange={e => set("venue", e.target.value)} /></Field>
+            <Field label="Pin location on map (optional)">
+              <VenuePicker
+                venue={form.venue}
+                latitude={coords.latitude}
+                longitude={coords.longitude}
+                onCoordsChange={setCoords}
+                accent={form.accent}
+              />
+            </Field>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Field label="Organizer *"><Input placeholder="Org name" value={form.organizer} onChange={e => set("organizer", e.target.value)} /></Field>
               <Field label="Category">

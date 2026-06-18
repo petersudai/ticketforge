@@ -16,6 +16,7 @@ import { use, useState, useEffect } from "react";
 import Image from "next/image";
 import { MarketingNav } from "@/components/marketing/Nav";
 import { EventMiniCard, type MiniEvent } from "@/components/marketing/EventMiniCard";
+import { EventMap } from "@/components/maps/EventMap";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -45,6 +46,8 @@ interface PublicEvent {
   endTime?:    string;
   endDate?:    string;
   venue?:      string;
+  latitude?:   number | null;
+  longitude?:  number | null;
   organizer?:  string;
   category?:   string;
   description?: string;
@@ -773,6 +776,25 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
             </p>
           </div>
         </>
+        )}
+
+        {/* ─────────── Location map ─────────── */}
+        {event.latitude != null && event.longitude != null && (
+          <div style={{ marginTop: 40, paddingTop: 28, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: 17, fontWeight: 700, color: "#fff", marginBottom: 4 }}>
+              Location
+            </h2>
+            {event.venue && (
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginBottom: 14 }}>{event.venue}</p>
+            )}
+            <EventMap
+              lat={event.latitude}
+              lng={event.longitude}
+              venue={event.venue}
+              accent={event.accent}
+              height={260}
+            />
+          </div>
         )}
 
         {/* ─────────── More events like this ─────────── */}
