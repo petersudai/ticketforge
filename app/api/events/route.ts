@@ -24,6 +24,8 @@ const CreateEventSchema = z.object({
   endTime:     z.string().max(20).optional().nullable(),
   endDate:     z.string().optional().nullable(),
   venue:       z.string().min(1, "Venue is required").max(200).trim(),
+  latitude:    z.number().min(-90).max(90).optional().nullable(),
+  longitude:   z.number().min(-180).max(180).optional().nullable(),
   organizer:   z.string().min(1, "Organizer / brand name is required").max(100).trim(),
   category:    z.string().optional().nullable(),
   description: z.string().optional().nullable(),

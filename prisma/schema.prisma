@@ -120,6 +120,11 @@ model Event {
   endTime     String?  // optional end time, e.g. "10:00 PM"
   endDate     String?  // optional end date for multi-day events (YYYY-MM-DD)
   venue       String?
+  // Optional geocoded location for the venue. Set via the map picker on the
+  // event form (free OpenStreetMap/Nominatim). When present, the public event
+  // page renders a Leaflet map + "get directions" link. Null = no map shown.
+  latitude    Float?
+  longitude   Float?
   organizer   String?
   category    String?
   description String?
