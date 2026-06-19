@@ -362,13 +362,17 @@ export default function MarketplaceClient({ initialEvents }: MarketplaceClientPr
     if (sortBy === "date") {
       upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     } else if (sortBy === "price-low") {
-      upcoming.sort((a, b) =>
-        Math.min(0, ...a.tiers.map(t => t.price)) - Math.min(0, ...b.tiers.map(t => t.price))
-      );
+      upcoming.sort((a, b) => {
+        const aMin = a.tiers.length ? Math.min(...a.tiers.map(t => t.price)) : 0;
+        const bMin = b.tiers.length ? Math.min(...b.tiers.map(t => t.price)) : 0;
+        return aMin - bMin;
+      });
     } else if (sortBy === "price-high") {
-      upcoming.sort((a, b) =>
-        Math.max(0, ...b.tiers.map(t => t.price)) - Math.max(0, ...a.tiers.map(t => t.price))
-      );
+      upcoming.sort((a, b) => {
+        const aMax = a.tiers.length ? Math.max(...a.tiers.map(t => t.price)) : 0;
+        const bMax = b.tiers.length ? Math.max(...b.tiers.map(t => t.price)) : 0;
+        return bMax - aMax;
+      });
     } else if (sortBy === "popular") {
       upcoming.sort((a, b) => b.attendeeCount - a.attendeeCount);
     }
