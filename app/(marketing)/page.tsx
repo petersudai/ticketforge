@@ -252,7 +252,7 @@ function Hero() {
 // ── Logos / Social proof ──────────────────────────────────────────────
 
 function TrustBar() {
-  const logos = ["Safaricom M-Pesa", "Vercel", "Next.js", "Prisma", "EmailJS", "jsQR"];
+  const logos = ["Safaricom M-Pesa", "Vercel", "Next.js", "Prisma", "Supabase", "jsQR"];
   return (
     <section className="py-16 border-y border-white/[0.05]">
       <div className="max-w-5xl mx-auto px-6">
@@ -798,7 +798,7 @@ function Stats() {
 
 const faqs = [
   { q: "Do I need a Safaricom business account to use M-Pesa?", a: "For sandbox/testing, no. For live events collecting real payments, you need a Safaricom M-Pesa Express API account with a registered shortcode. We guide you through setup in our docs." },
-  { q: "How quickly do attendees receive their tickets?", a: "Immediately after M-Pesa payment clears (usually under 10 seconds). The ticket is emailed via EmailJS with a QR code and unique ticket ID." },
+  { q: "How quickly do attendees receive their tickets?", a: "Immediately after payment clears (usually under 10 seconds). The ticket is emailed automatically with a QR code and unique ticket ID." },
   { q: "Can I scan tickets without internet at the venue?", a: "The scanner works offline for previously loaded events. We recommend a strong mobile data connection for real-time check-in counts." },
   { q: "What happens if an attendee loses their ticket email?", a: "Each ticket has a unique ID. Organisers can look up any attendee by name or ID in the dashboard and verify manually." },
   { q: "Is there a limit to how many ticket tiers I can create?", a: "No. Create as many tiers as you need: Early Bird, General, VIP, VVIP, Press, Student, Sponsor. Each with its own price and quantity." },
