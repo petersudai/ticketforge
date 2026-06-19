@@ -85,9 +85,9 @@ export function DiscoverEvents() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {events === null
             ? [0, 1, 2, 3].map(i => (
-                <div key={i} className="rounded-2xl overflow-hidden border border-white/[0.07] animate-pulse h-[230px]"
+                <div key={i} className="rounded-2xl overflow-hidden border border-white/[0.07] animate-pulse h-[390px]"
                   style={{ background: "rgba(15,15,22,0.9)" }}>
-                  <div className="h-[130px] bg-white/[0.04]" />
+                  <div className="h-[220px] bg-white/[0.04]" />
                   <div className="p-3.5 space-y-2">
                     <div className="h-3 bg-white/[0.06] rounded w-3/4" />
                     <div className="h-2.5 bg-white/[0.04] rounded w-1/2" />

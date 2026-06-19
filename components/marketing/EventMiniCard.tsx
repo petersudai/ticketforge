@@ -49,12 +49,12 @@ export function EventMiniCard({ event }: { event: MiniEvent }) {
   return (
     <Link href={`/events/${event.slug}`} className="group block h-full">
       <div
-        className="rounded-2xl overflow-hidden border border-white/[0.07] transition-all duration-300 group-hover:border-white/[0.18] group-hover:-translate-y-[2px] h-full flex flex-col"
+        className="rounded-2xl overflow-hidden border border-white/[0.07] transition-all duration-300 group-hover:border-white/[0.18] group-hover:-translate-y-[2px] h-[390px] flex flex-col"
         style={{ background: "rgba(15,15,22,0.9)" }}
       >
         {/* Cover */}
         <div
-          className="relative h-[130px] shrink-0 overflow-hidden"
+          className="relative h-[220px] shrink-0 overflow-hidden"
           style={{ background: event.bgImage ? undefined : `linear-gradient(135deg, ${accent}28, ${accent}08)` }}
         >
           {event.bgImage && (
