@@ -920,11 +920,11 @@ export default function HomePage() {
       <main>
         <Hero />
         <TrustBar />
+        <DiscoverEvents />
         <Features />
         <HowItWorks />
         <Stats />
         <Benefits />
-        <DiscoverEvents />
         <Pricing />
         <Testimonials />
         <FAQ />
