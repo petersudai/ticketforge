@@ -267,6 +267,9 @@ export default function ScannerPage() {
               await verify(pendingOverride, true);
               setPendingOverride(null);
             }
+          } else if (data.requiresSetup) {
+            setPinError("No PIN set — configure one in Settings first.");
+            setTimeout(() => setPinVal(""), 600);
           } else {
             const attempts = pinAttempts + 1;
             setPinAttempts(attempts);
