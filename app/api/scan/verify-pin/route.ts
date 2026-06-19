@@ -58,5 +58,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Organisation not found" }, { status: 404 });
   }
 
+  if (!org.overridePin) {
+    return NextResponse.json({ valid: false, requiresSetup: true });
+  }
+
   return NextResponse.json({ valid: pin === org.overridePin });
 }

@@ -37,7 +37,7 @@ model Organisation {
   kycSubmittedAt   DateTime?
 
   // Scanner override PIN — stored server-side only; never sent to clients.
-  overridePin String @default("1234")
+  overridePin String @default("")
 
   // Launch promo tracking — "your first event is free" applies to whichever
   // event is published first. Once set, all future events on this org pay

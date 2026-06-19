@@ -47,12 +47,24 @@ function getClientIp(req: NextRequest): string {
 }
 
 export async function POST(req: NextRequest) {
-  // In production, only accept callbacks from known Safaricom IPs
+  // Layer 1: shared secret embedded in the callback URL (?secret=xxx).
+  // Only enforced when MPESA_CALLBACK_SECRET is set — gracefully skipped otherwise
+  // so existing deployments aren't broken on upgrade.
+  const configuredSecret = process.env.MPESA_CALLBACK_SECRET;
+  if (configuredSecret) {
+    const incoming = req.nextUrl.searchParams.get("secret");
+    if (incoming !== configuredSecret) {
+      console.warn("[mpesa/callback] Invalid or missing callback secret");
+      return ACCEPTED; // silent — don't reveal the guard exists
+    }
+  }
+
+  // Layer 2: Safaricom IP allowlist (production only)
   if (process.env.NODE_ENV === "production" && process.env.MPESA_ENV === "production") {
     const clientIp = getClientIp(req);
     if (!SAFARICOM_IPS.has(clientIp)) {
       console.warn(`[mpesa/callback] Blocked unknown IP: ${clientIp}`);
-      return ACCEPTED; // Return 200 to avoid Safaricom retry loops, but do nothing
+      return ACCEPTED;
     }
   }
 
