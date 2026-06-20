@@ -41,7 +41,7 @@ function TierRow({ tier, index, total, onChange, onRemove, onMove, currency }: {
 }) {
   return (
     <div className="border border-white/[0.07] rounded-xl p-3 mb-2 bg-white/[0.02]">
-      <div className="grid grid-cols-[1fr_90px_70px_70px] gap-2 items-center mb-2">
+      <div className="grid grid-cols-[1fr_72px_54px_54px] sm:grid-cols-[1fr_90px_70px_70px] gap-2 items-center mb-2">
         <Input
           placeholder="Tier name"
           value={tier.name}
@@ -383,7 +383,7 @@ export default function NewEventPage() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-heading font-bold text-[22px] tracking-tight">New event</h1>
@@ -475,7 +475,7 @@ export default function NewEventPage() {
             <CardHeader><CardTitle>Ticket tiers</CardTitle></CardHeader>
 
             {/* Column headers */}
-            <div className="grid grid-cols-[1fr_90px_70px_70px] gap-2 mb-1 px-3">
+            <div className="grid grid-cols-[1fr_72px_54px_54px] sm:grid-cols-[1fr_90px_70px_70px] gap-2 mb-1 px-3">
               {["Name", `Price (${form.currency})`, "Qty", "People / ticket"].map(h => (
                 <div key={h} className="text-[10px] text-[#5a5a72] uppercase tracking-[0.06em] font-heading">{h}</div>
               ))}
