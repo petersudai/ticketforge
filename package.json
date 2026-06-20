@@ -4,18 +4,18 @@
   "private": true,
   "scripts": {
     "postinstall": "prisma generate",
-    "dev": "dotenv -e .env.local --override next dev",
+    "dev": "dotenv -e .env.local -o -- next dev",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "db:push": "dotenv -e .env.local --override prisma db push",
-    "db:generate": "dotenv -e .env.local --override prisma generate",
-    "db:studio": "dotenv -e .env.local --override prisma studio",
+    "db:push": "dotenv -e .env.local -o -- prisma db push",
+    "db:generate": "dotenv -e .env.local -o -- prisma generate",
+    "db:studio": "dotenv -e .env.local -o -- prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
     "type-check": "tsc --noEmit",
-    "db:migrate": "dotenv -e .env.local --override prisma migrate dev",
-    "admin:seed": "dotenv -e .env.local --override -- npx tsx scripts/seed-admin.ts",
-    "make-admin": "dotenv -e .env.local --override -- node scripts/make-super-admin.js"
+    "db:migrate": "dotenv -e .env.local -o -- prisma migrate dev",
+    "admin:seed": "dotenv -e .env.local -o -- npx tsx scripts/seed-admin.ts",
+    "make-admin": "dotenv -e .env.local -o -- node scripts/make-super-admin.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
