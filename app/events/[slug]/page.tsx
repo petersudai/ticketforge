@@ -265,6 +265,8 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
   const eventSoldOut  = event.soldOut || visibleTiers.every(t => t.soldOut || t.saleWindowStatus !== "active");
   // Client-side max: capped at 20 (server also validates remaining inventory)
   const MAX_QTY = 20;
+  // Past events: purchase UI is display-only; buying is blocked
+  const isPastEvent = !isUpcomingEvent(event);
 
   const qtBtnStyle: React.CSSProperties = {
     width: 34, height: 34, borderRadius: "50%",
@@ -465,7 +467,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 clamp(1rem, 4vw, 2rem) 4rem" }}>
 
         {/* Step indicator — shown only when the event is purchasable */}
-        {!eventSoldOut && visibleTiers.length > 0 && (
+        {!isPastEvent && !eventSoldOut && visibleTiers.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
             {([{ n: 1, label: "Your details" }, { n: 2, label: "Payment" }] as const).map((s, idx) => (
               <div key={s.n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -499,7 +501,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
 
         {visibleTiers.map((t, i) => {
           const isSelected    = i === selectedTierIdx;
-          const unavailable   = t.soldOut || t.saleWindowStatus !== "active";
+          const unavailable   = isPastEvent || t.soldOut || t.saleWindowStatus !== "active";
           const saleWindowMsg = t.saleWindowStatus === "not_started"
             ? `Sales open ${t.saleStartsAt ? new Date(t.saleStartsAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "soon"}`
             : t.saleWindowStatus === "ended" ? "Sales closed" : null;
@@ -550,15 +552,25 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
           );
         })}
 
+        {/* Past event banner */}
+        {isPastEvent && (
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "24px 20px", marginBottom: 16, textAlign: "center" }}>
+            <div style={{ fontSize: 30, marginBottom: 10 }}>🎟️</div>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 700, color: "rgba(255,255,255,0.6)", marginBottom: 6 }}>This event has ended</div>
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 16 }}>Ticket sales are closed. Browse upcoming events below.</p>
+            <a href="/marketplace" style={{ display: "inline-block", padding: "9px 20px", borderRadius: 10, background: "rgba(108,92,231,0.2)", border: "1px solid rgba(108,92,231,0.3)", color: "#a29cf4", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>Browse upcoming events →</a>
+          </div>
+        )}
+
         {/* Sold out banner */}
-        {eventSoldOut && (
+        {!isPastEvent && eventSoldOut && (
           <div style={{ background: "rgba(214,48,49,0.1)", border: "1px solid rgba(214,48,49,0.25)", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#ff7675", textAlign: "center" }}>
             This event has reached capacity. No more tickets available.
           </div>
         )}
 
         {/* ── Quantity selector ──────────────────────────────────── */}
-        {!eventSoldOut && tier && !tier.soldOut && tier.saleWindowStatus === "active" && (
+        {!isPastEvent && !eventSoldOut && tier && !tier.soldOut && tier.saleWindowStatus === "active" && (
           <div style={{ marginBottom: 16 }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
               How many tickets?
@@ -622,7 +634,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
         )}
 
         {/* Registration form */}
-        {!eventSoldOut && visibleTiers.length > 0 && (
+        {!isPastEvent && !eventSoldOut && visibleTiers.length > 0 && (
           <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: "1.5rem", marginTop: 16 }}>
             <h3 style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Your details</h3>
 
@@ -673,7 +685,7 @@ export default function PublicEventPage({ params }: { params: Promise<{ slug: st
         )}
 
         {/* ─────────── STEP 2: review & pay ─────────── */}
-        {step === 2 && !eventSoldOut && visibleTiers.length > 0 && (
+        {step === 2 && !isPastEvent && !eventSoldOut && visibleTiers.length > 0 && (
         <>
           {/* Order summary */}
           <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: "1.25rem 1.5rem", marginBottom: 14 }}>
