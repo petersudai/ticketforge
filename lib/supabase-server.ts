@@ -9,7 +9,7 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import type { Role } from "@/lib/roles";
+import { roleFromUser, type Role } from "@/lib/roles";
 
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? "";
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -52,10 +52,6 @@ export async function getServerSession() {
 export async function getServerUserWithRole() {
   const user = await getServerUser();
   if (!user) return null;
-  const role = (
-    user.user_metadata?.role ??
-    user.app_metadata?.role ??
-    "organiser"
-  ) as Role;
+  const role: Role = roleFromUser(user) ?? "organiser";
   return { user, role };
 }

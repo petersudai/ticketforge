@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { User } from "@supabase/supabase-js";
-import type { Role } from "@/lib/roles";
+import { roleFromUser, isRole, type Role } from "@/lib/roles";
 import { prisma } from "@/lib/db";
 
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? "";
@@ -96,11 +96,17 @@ export async function requireRole(
     };
   }
 
-  const role = (
-    user.user_metadata?.role ??
-    user.app_metadata?.role ??
-    "organiser"
-  ) as Role;
+  // Role comes from app_metadata (service-key only). If it hasn't been synced
+  // yet, the DB Profile is authoritative. user_metadata is never trusted.
+  let role: Role | null = roleFromUser(user);
+  if (!role) {
+    const profile = await (prisma as any).profile.findUnique({
+      where:  { supabaseUserId: user.id },
+      select: { role: true },
+    }).catch(() => null);
+    const dbRole: unknown = profile?.role;
+    role = isRole(dbRole) ? dbRole : "organiser";
+  }
 
   logAuth("info", "auth_check", { path, userId: user.id, role, allowedRoles });
 

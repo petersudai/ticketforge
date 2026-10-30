@@ -16,6 +16,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { ensureOrgForUser } from "@/lib/orgs/ensureOrgForUser";
+import { roleFromUser } from "@/lib/roles";
 import { z } from "zod";
 
 const SUPABASE_URL     = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? "";
@@ -65,6 +66,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "User not found" }, { status: 401 });
   }
 
+  const authUser = await verifyRes.json().catch(() => null);
+
   try {
     // ── Single call: idempotent, race-safe org provisioning ──────────
     // The helper handles all four cases:
@@ -79,10 +82,10 @@ export async function POST(req: NextRequest) {
       userEmail:    null,
     });
 
-    // ── Sync role to Supabase JWT metadata (fire-and-forget) ─────────
-    // Only fired for newly-created orgs — for "existing" results, the
-    // metadata is presumably already correct from the original setup.
-    if (!result.existing && SUPABASE_SERVICE && SUPABASE_URL) {
+    // ── Sync role to Supabase app_metadata (fire-and-forget) ─────────
+    // Only for newly-created orgs, and never over a role that's already set
+    // (this endpoint is unauthenticated, so it must not be able to demote anyone).
+    if (!result.existing && !roleFromUser(authUser) && SUPABASE_SERVICE && SUPABASE_URL) {
       fetch(`${SUPABASE_URL}/auth/v1/admin/users/${supabaseUserId}`, {
         method:  "PUT",
         headers: {
@@ -91,7 +94,8 @@ export async function POST(req: NextRequest) {
           "Authorization": `Bearer ${SUPABASE_SERVICE}`,
         },
         body: JSON.stringify({
-          user_metadata: { role: "organiser", org_name: orgName },
+          app_metadata:  { role: "organiser" },
+          user_metadata: { org_name: orgName },
         }),
       }).catch(err => {
         console.warn("[/api/auth/signup] Metadata sync failed (non-fatal):", err.message);

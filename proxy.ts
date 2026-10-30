@@ -23,7 +23,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { canAccess, defaultRedirect } from "@/lib/roles";
+import { canAccess, defaultRedirect, roleFromUser } from "@/lib/roles";
 import type { Role } from "@/lib/roles";
 
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? "";
@@ -100,12 +100,9 @@ export async function proxy(req: NextRequest) {
     return res;
   }
 
-  // Read role from JWT metadata (fastest path — no DB call needed)
-  const role = (
-    user.user_metadata?.role ??
-    user.app_metadata?.role ??
-    "organiser"
-  ) as Role;
+  // Read role from app_metadata only (user_metadata is user-editable).
+  // This gate is UX routing; the API routes re-check against the DB.
+  const role: Role = roleFromUser(user) ?? "organiser";
 
   // RBAC check
   if (!canAccess(role, pathname)) {

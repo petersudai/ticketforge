@@ -14,7 +14,7 @@
  *
  * What it does:
  *   1. Looks up the user in Supabase Auth by email
- *   2. Updates user_metadata.role = "super_admin" via Admin API
+ *   2. Updates app_metadata.role = "super_admin" via Admin API
  *      (so middleware sees the new role in the JWT immediately)
  *   3. Updates the Profile row in Postgres via Prisma
  *
@@ -73,10 +73,10 @@ async function main() {
   }
 
   console.log(`✅  Found user: ${user.id} (${user.email})`);
-  console.log(`    Current role: ${user.user_metadata?.role ?? "(none)"}`);
+  console.log(`    Current role: ${user.app_metadata?.role ?? "(none)"}`);
 
   // ── 2. Update Supabase user_metadata via Admin API ──────────────────
-  console.log("\n📝  Updating Supabase user_metadata…");
+  console.log("\n📝  Updating Supabase app_metadata…");
 
   const updateRes = await fetch(
     `${SUPABASE_URL}/auth/v1/admin/users/${user.id}`,
@@ -88,8 +88,8 @@ async function main() {
         "Authorization": `Bearer ${SUPABASE_SERVICE}`,
       },
       body: JSON.stringify({
-        user_metadata: {
-          ...user.user_metadata,
+        app_metadata: {
+          ...user.app_metadata,
           role: "super_admin",
         },
       }),
@@ -101,7 +101,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("✅  Supabase user_metadata.role = \"super_admin\"");
+  console.log("✅  Supabase app_metadata.role = \"super_admin\"");
 
   // ── 3. Update Profile row in Postgres ───────────────────────────────
   // We use a raw pg query to avoid Prisma client version issues in scripts.

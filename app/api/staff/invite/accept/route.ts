@@ -89,10 +89,10 @@ export async function POST(req: NextRequest) {
           email:              invite.email,
           password,
           email_confirm:      true, // skip confirmation — they were invited
+          app_metadata:  { role: "staff" },
           user_metadata: {
             full_name: name,
             name,
-            role:      "staff",
             org_id:    invite.orgId,
             org_name:  invite.org.name,
           },

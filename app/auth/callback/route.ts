@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { defaultRedirect } from "@/lib/roles";
+import { defaultRedirect, roleFromUser } from "@/lib/roles";
 import type { Role } from "@/lib/roles";
 
 const SUPABASE_URL      = process.env.NEXT_PUBLIC_SUPABASE_URL      ?? "";
@@ -69,10 +69,7 @@ export async function GET(req: NextRequest) {
   }
 
   const user = data.session.user;
-  let role = (
-    user.user_metadata?.role ??
-    user.app_metadata?.role
-  ) as Role | undefined;
+  let role: Role | undefined = roleFromUser(user) ?? undefined;
 
   // ── Handle new Google OAuth users ────────────────────────────────────
   // Google OAuth users don't have a role in metadata on first sign-in.

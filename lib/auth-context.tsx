@@ -6,18 +6,17 @@
  * Fixes Supabase IndexedDB lock contention from multiple concurrent calls.
  *
  * ROLE RESOLUTION (in order):
- *   1. user_metadata.role  (JWT — set by trigger/admin API on signup)
- *   2. app_metadata.role   (set server-side by admin)
- *   3. /api/auth/me        (DB Profile fallback — for users created before trigger)
- *   4. "organiser"         (safe default for authenticated users)
+ *   1. app_metadata.role   (set server-side with the service key only)
+ *   2. /api/auth/me        (DB Profile fallback — for users not yet synced)
+ *   3. "organiser"         (safe default for authenticated users)
  *
- * This fixes Issue 6 (nav missing) when user_metadata.role is null.
+ * user_metadata.role is deliberately ignored: signed-in users can edit it.
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { User, AuthChangeEvent } from "@supabase/supabase-js";
 import { getUser, getSupabaseClient } from "@/lib/supabase";
-import type { Role } from "@/lib/roles";
+import { roleFromUser, type Role } from "@/lib/roles";
 
 interface AuthState {
   user:    User | null;
@@ -49,10 +48,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // ── Role resolution ──────────────────────────────────────────
-      const metaRole = u.user_metadata?.role ?? u.app_metadata?.role;
+      // app_metadata only: user_metadata is user-editable, so never trusted.
+      const metaRole = roleFromUser(u);
 
-      if (metaRole && ["super_admin", "organiser", "staff"].includes(metaRole)) {
-        setRole(metaRole as Role);
+      if (metaRole) {
+        setRole(metaRole);
         return;
       }
 

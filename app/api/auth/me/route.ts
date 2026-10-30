@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
  * GET /api/auth/me
  *
  * Returns the authenticated user's role and orgId from the DB.
- * Used as a fallback by AuthProvider when user_metadata.role is missing —
+ * Used as a fallback by AuthProvider when app_metadata.role is missing —
  * this happens for accounts created before the DB trigger populated metadata.
  *
  * AUTO-RECOVERY (added 2026-05):
@@ -24,6 +24,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { db } from "@/lib/db";
 import { ensureOrgForUser } from "@/lib/orgs/ensureOrgForUser";
+import { roleFromUser } from "@/lib/roles";
 
 const SUPABASE_URL     = process.env.NEXT_PUBLIC_SUPABASE_URL     ?? "";
 const SUPABASE_ANON    = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -101,9 +102,9 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Opportunistically sync role into JWT metadata so this fallback is
+  // Opportunistically sync the DB role into app_metadata so this fallback is
   // not needed on the next login. Fire-and-forget — non-critical.
-  if (SUPABASE_SERVICE && !user.user_metadata?.role) {
+  if (SUPABASE_SERVICE && !roleFromUser(user)) {
     fetch(`${SUPABASE_URL}/auth/v1/admin/users/${user.id}`, {
       method:  "PUT",
       headers: {
@@ -112,7 +113,7 @@ export async function GET(req: NextRequest) {
         "Authorization": `Bearer ${SUPABASE_SERVICE}`,
       },
       body: JSON.stringify({
-        user_metadata: { ...user.user_metadata, role },
+        app_metadata: { role },
       }),
     }).catch(() => {});
   }

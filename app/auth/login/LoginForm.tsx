@@ -75,9 +75,7 @@ export default function LoginForm() {
 
     // Route by role after successful login.
     // window.location.href = full page reload so middleware runs with fresh cookies.
-    const role = data.session.user.user_metadata?.role
-               ?? data.session.user.app_metadata?.role
-               ?? "organiser";
+    const role = data.session.user.app_metadata?.role ?? "organiser";
 
     let destination = explicitNext;
     if (!destination) {

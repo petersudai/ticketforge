@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  *   - checkInCount tracks fast counter; Scan rows are full audit trail
  *   - checkedIn = true only when checkInCount >= tier.capacity (fully redeemed)
  *   - 6-second server-side cooldown prevents double-scan from same physical scanner
- *   - Override flag (PIN-gated client-side) allows +1 beyond capacity with full logging
+ *   - Override flag (PIN verified server-side) allows +1 beyond capacity with full logging
  *   - Atomic DB transaction with SELECT FOR UPDATE prevents race conditions
  */
 
@@ -27,7 +27,7 @@ const ScanBodySchema = z.object({
   ticketId: z.string().min(1),
   eventId:  z.string().min(1),
   override: z.boolean().default(false),
-  overridePin: z.string().optional(), // already validated client-side; logged here
+  overridePin: z.string().max(12).optional(), // verified server-side when override is true
 });
 
 export async function POST(req: NextRequest) {
@@ -46,12 +46,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { ticketId, eventId, override } = parsed.data;
+  const { ticketId, eventId, override, overridePin } = parsed.data;
   const scannerId = guard.user.id;
 
   // Ownership: verify the scanner has access to this event
   const own = await assertEventOwnership(eventId, guard);
   if (!own.ok) return own.response;
+
+  // Override lets a ticket past its capacity, so the PIN is checked here on the
+  // server. The scanner UI check alone can be skipped by calling this API directly.
+  if (override) {
+    const ev  = await db.event.findUnique({ where: { id: eventId }, select: { orgId: true } }).catch(() => null);
+    const org = ev
+      ? await db.organisation.findUnique({ where: { id: ev.orgId }, select: { overridePin: true } }).catch(() => null)
+      : null;
+    if (!org?.overridePin || overridePin !== org.overridePin) {
+      return NextResponse.json({ error: "Override PIN required or incorrect" }, { status: 403 });
+    }
+  }
 
   // ── Atomic transaction with row-level lock ──────────────────────────
   // We use $transaction + raw SQL for SELECT FOR UPDATE to prevent two

@@ -100,7 +100,7 @@ export default function ScannerPage() {
   };
 
   // ── Core scan function ──────────────────────────────────────────────
-  const verify = useCallback(async (ticketId: string, override = false) => {
+  const verify = useCallback(async (ticketId: string, override = false, overridePin?: string) => {
     if (!evId) {
       setResultState({ type: "invalid", icon: "✕", name: "No event selected", info: "Select an event before scanning" });
       return;
@@ -119,7 +119,7 @@ export default function ScannerPage() {
       const res = await fetch("/api/scan", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ ticketId, eventId: evId, override }),
+        body:    JSON.stringify({ ticketId, eventId: evId, override, overridePin }),
         credentials: "include",
       });
 
@@ -264,7 +264,7 @@ export default function ScannerPage() {
             setPinVal("");
             setPinError("");
             if (pendingOverride) {
-              await verify(pendingOverride, true);
+              await verify(pendingOverride, true, next);
               setPendingOverride(null);
             }
           } else if (data.requiresSetup) {

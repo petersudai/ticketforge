@@ -12,6 +12,25 @@
 
 export type Role = "super_admin" | "organiser" | "staff";
 
+const ROLES: readonly string[] = ["super_admin", "organiser", "staff"];
+
+export function isRole(value: unknown): value is Role {
+  return typeof value === "string" && ROLES.includes(value);
+}
+
+/**
+ * The only trusted role source on the auth user. app_metadata can be written
+ * with the service key only; user_metadata is editable by the signed-in user
+ * (supabase.auth.updateUser), so it must never decide access.
+ * Returns null when no valid role has been synced yet.
+ */
+export function roleFromUser(
+  user: { app_metadata?: Record<string, unknown> | null } | null | undefined
+): Role | null {
+  const r = user?.app_metadata?.role;
+  return isRole(r) ? r : null;
+}
+
 // ── Route access map ──────────────────────────────────────────────────
 
 export const ROUTE_ACCESS: Record<string, Role[]> = {

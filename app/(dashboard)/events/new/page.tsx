@@ -459,9 +459,6 @@ export default function NewEventPage() {
               <Field label="Currency">
                 <Select value={form.currency} onChange={e => set("currency", e.target.value)}>
                   <option value="KES">KES · Kenyan Shilling</option>
-                  <option value="USD">USD · US Dollar</option>
-                  <option value="UGX">UGX · Ugandan Shilling</option>
-                  <option value="TZS">TZS · Tanzanian Shilling</option>
                 </Select>
               </Field>
               <Field label="Public URL slug"><Input placeholder="jazz-night-2025" value={form.slug} onChange={e => setSlug(e.target.value)} /></Field>
