@@ -55,12 +55,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Sales for this tier have ended" }, { status: 409 });
   }
 
+  // Stock held by payments still in flight counts as taken, so two buyers can't
+  // both start paying for the last ticket (the loser would pay and get nothing).
+  const RESERVATION_MS = 5 * 60_000;
+  const inFlight = await (prisma as any).pendingPayment.aggregate({
+    where: {
+      tierId:    tier.id,
+      status:    { in: ["pending", "processing"] },
+      createdAt: { gt: new Date(Date.now() - RESERVATION_MS) },
+    },
+    _sum: { quantity: true },
+  }).catch(() => null);
+
   const sold      = tier._count?.attendees ?? 0;
-  const remaining = tier.quantity - sold;
+  const held      = inFlight?._sum?.quantity ?? 0;
+  const remaining = tier.quantity - sold - held;
   if (tier.quantity > 0 && remaining < quantity) {
-    const msg = remaining <= 0
-      ? "Sorry — this ticket tier is sold out"
-      : `Only ${remaining} ticket${remaining === 1 ? "" : "s"} remaining in this tier`;
+    const msg =
+      sold >= tier.quantity
+        ? "Sorry, this ticket tier is sold out"
+        : remaining <= 0
+          ? "The last tickets are being paid for right now. If that payment fails they'll open up again, so try again in a few minutes."
+          : `Only ${remaining} ticket${remaining === 1 ? "" : "s"} available right now in this tier`;
     return NextResponse.json({ error: msg }, { status: 409 });
   }
 
@@ -114,9 +130,7 @@ export async function POST(req: NextRequest) {
       phone,
       amount:      expectedAmount,
       accountRef:  ticketId,
-      description: quantity > 1
-        ? `${eventName} - ${quantity}× ${tier.name}`
-        : `${eventName} - ${tier.name} Ticket`,
+      description: quantity > 1 ? `${quantity} Tickets` : "Ticket",
     });
 
     if (stkRes.ResponseCode !== "0") {

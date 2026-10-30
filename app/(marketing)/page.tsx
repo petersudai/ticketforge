@@ -480,7 +480,7 @@ function Pricing() {
   const included = [
     "Zero platform commission on your first event",
     "Free events stay free, for you and your attendees, forever",
-    "M-Pesa STK Push baked in, instant payouts to your number",
+    "M-Pesa STK Push baked in, with your earnings paid out to your M-Pesa",
     "Unlimited events, tiers, tickets, scanners, and team members",
     "Real-time analytics, branded tickets, gate-scanner mobile app",
     "No subscription. No setup fee. No surprise charges, ever.",
@@ -804,7 +804,7 @@ const faqs = [
   { q: "Is there a limit to how many ticket tiers I can create?", a: "No. Create as many tiers as you need: Early Bird, General, VIP, VVIP, Press, Student, Sponsor. Each with its own price and quantity." },
   { q: "Can I refund tickets?", a: "Refunds are handled directly via M-Pesa's reversal API. We provide the transaction reference so you can process refunds from your Safaricom portal." },
   { q: "What file formats can I download tickets in?", a: "PNG (high-resolution, 3× retina) and PDF (A4 portrait, print-ready). Bulk export downloads all attendee tickets as a single multi-page PDF." },
-  { q: "Do you support events outside Kenya?", a: "Yes. We support KES, USD, UGX, and TZS. M-Pesa covers Kenya, Tanzania, Uganda, and DRC. Stripe and other gateways can be added." },
+  { q: "Do you support events outside Kenya?", a: "Not yet. Events are priced and paid in Kenyan shillings (KES) through M-Pesa. Other countries and currencies are on the roadmap." },
 ];
 
 function FAQ() {

@@ -158,11 +158,9 @@ export async function POST(req: NextRequest) {
       const soldInTx  = await tx.attendee.count({ where: { tierId: pending.tierId, slotIndex: 0 } });
       const remaining = (tier?.quantity ?? 0) - soldInTx;
 
+      // The status update must happen outside this transaction (see catch below):
+      // throwing here rolls the whole transaction back, including any write made in it.
       if ((tier?.quantity ?? 0) > 0 && remaining < quantity) {
-        await tx.pendingPayment.update({
-          where: { checkoutRequestId: CheckoutRequestID },
-          data:  { status: "failed", resultDesc: "Insufficient capacity during payment processing" },
-        });
         throw new Error("SOLD_OUT_AFTER_PAYMENT");
       }
 
@@ -228,7 +226,17 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     if (err?.message === "SOLD_OUT_AFTER_PAYMENT") {
-      console.warn("[mpesa/callback] Sold out after payment — manual refund required", { CheckoutRequestID });
+      console.warn("[mpesa/callback] Sold out after payment — manual refund required", { CheckoutRequestID, receiptNumber });
+      // Keep the receipt so the buyer can be refunded, and tell the polling client
+      // the truth instead of leaving the row stuck in "processing".
+      await (prisma as any).pendingPayment.updateMany({
+        where: { checkoutRequestId: CheckoutRequestID, status: "processing" },
+        data:  {
+          status:             "failed",
+          mpesaReceiptNumber: receiptNumber,
+          resultDesc:         `Payment received (${receiptNumber}) but the tickets sold out before it was confirmed. Contact the organiser for a refund.`,
+        },
+      }).catch((e: any) => console.error("[mpesa/callback] Could not record sold-out payment:", e.message));
     } else {
       console.error("[mpesa/callback] Transaction failed:", err.message);
       await (prisma as any).pendingPayment.updateMany({

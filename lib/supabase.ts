@@ -11,7 +11,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
-import type { Role } from "@/lib/roles";
+import { roleFromUser, type Role } from "@/lib/roles";
 
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? "";
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -108,8 +108,7 @@ export async function getUser(): Promise<User | null> {
 
 export function getUserRole(user: User | null): Role | null {
   if (!user) return null;
-  const role = user.user_metadata?.role ?? user.app_metadata?.role;
-  return (role as Role) ?? "organiser";
+  return roleFromUser(user) ?? "organiser";
 }
 
 export function onAuthStateChange(

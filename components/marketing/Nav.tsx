@@ -20,7 +20,7 @@ function AccountMenu({ user }: { user: SupabaseUser }) {
   const [open, setOpen] = useState(false);
   const name     = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email ?? "Account";
   const initials = name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-  const role     = (user.user_metadata?.role ?? "organiser").replace("_", " ");
+  const role     = String(user.app_metadata?.role ?? "organiser").replace("_", " ");
 
   const handleSignOut = async () => {
     clearUIStore();

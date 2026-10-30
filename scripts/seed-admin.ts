@@ -9,7 +9,7 @@
  *
  * What it does:
  *   1. Looks up the user in Supabase Auth by email
- *   2. Updates their user_metadata.role = "super_admin" (JWT is refreshed on next login)
+ *   2. Updates their app_metadata.role = "super_admin" (JWT is refreshed on next login)
  *   3. Upserts their Profile row in Postgres with role = "super_admin"
  *
  * Requirements:
@@ -76,7 +76,7 @@ async function main() {
   }
 
   console.log(`✅  Found user: ${user.id} (${user.email})`);
-  const currentRole = user.user_metadata?.role ?? user.app_metadata?.role ?? "(none)";
+  const currentRole = user.app_metadata?.role ?? "(none)";
   console.log(`    Current role: ${currentRole}`);
 
   if (currentRole === "super_admin") {
@@ -85,7 +85,7 @@ async function main() {
   }
 
   // ── 2. Update Supabase user_metadata ─────────────────────────────
-  console.log("\n📝  Updating Supabase user_metadata...");
+  console.log("\n📝  Updating Supabase app_metadata...");
 
   const updateRes = await fetch(
     `${SUPABASE_URL}/auth/v1/admin/users/${user.id}`,
@@ -97,8 +97,8 @@ async function main() {
         "Authorization": `Bearer ${SUPABASE_SERVICE}`,
       },
       body: JSON.stringify({
-        user_metadata: {
-          ...user.user_metadata,
+        app_metadata: {
+          ...user.app_metadata,
           role: "super_admin",
         },
       }),

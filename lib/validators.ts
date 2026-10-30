@@ -66,7 +66,8 @@ export const CreateEventSchema = z.object({
   category:    z.string().max(50).optional().nullable(),
   description: z.string().max(2000).optional().nullable(),
   capacity:    z.number().int().min(1).max(1_000_000).optional().nullable(),
-  currency:    z.enum(["KES", "USD", "UGX", "TZS"]).default("KES"),
+  // M-Pesa STK Push always charges KES, so other currencies would charge the wrong amount.
+  currency:    z.enum(["KES"]).default("KES"),
   accent:      z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#6C5CE7"),
   mpesaSc:     z.string().max(20).optional().nullable(),
   orgId:       z.string().min(1, "Organisation ID is required"),

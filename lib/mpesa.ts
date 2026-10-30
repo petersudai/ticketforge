@@ -14,6 +14,18 @@ const SHORTCODE = process.env.MPESA_SHORTCODE || "174379";
 const PASSKEY = process.env.MPESA_PASSKEY || "";
 const CALLBACK_URL = process.env.MPESA_CALLBACK_URL || "https://yoursite.com/api/mpesa/callback";
 
+// Paybill (default) uses CustomerPayBillOnline. A Till (Buy Goods) must use
+// CustomerBuyGoodsOnline, and PartyB must be the till number, not the shortcode.
+const TRANSACTION_TYPE =
+  process.env.MPESA_TRANSACTION_TYPE === "CustomerBuyGoodsOnline"
+    ? "CustomerBuyGoodsOnline"
+    : "CustomerPayBillOnline";
+const PARTY_B = process.env.MPESA_PARTYB || SHORTCODE;
+
+// Daraja limits: AccountReference 12 chars, TransactionDesc 13 chars.
+const ACCOUNT_REF_MAX = 12;
+const TRANSACTION_DESC_MAX = 13;
+
 /** Get OAuth access token from Daraja */
 export async function getDarajaToken(): Promise<string> {
   const credentials = Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString("base64");
@@ -63,14 +75,14 @@ export async function initiateSTKPush(params: STKPushParams): Promise<STKPushRes
     BusinessShortCode: SHORTCODE,
     Password: password,
     Timestamp: timestamp,
-    TransactionType: "CustomerPayBillOnline",
+    TransactionType: TRANSACTION_TYPE,
     Amount: Math.round(params.amount),
     PartyA: phone,
-    PartyB: SHORTCODE,
+    PartyB: PARTY_B,
     PhoneNumber: phone,
     CallBackURL: CALLBACK_URL,
-    AccountReference: params.accountRef,
-    TransactionDesc: params.description,
+    AccountReference: params.accountRef.replace(/[^A-Za-z0-9]/g, "").slice(0, ACCOUNT_REF_MAX),
+    TransactionDesc: params.description.slice(0, TRANSACTION_DESC_MAX),
   };
 
   const res = await fetch(`${DARAJA_BASE}/mpesa/stkpush/v1/processrequest`, {
